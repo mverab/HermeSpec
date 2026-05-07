@@ -1,0 +1,77 @@
+type: scheduled_task
+version: 0.1.0
+description: Contract schema for recurring or scheduled agent operations.
+required:
+  - objective
+  - trigger
+  - preconditions
+  - actions
+  - idempotency
+  - rollback
+  - alerting
+  - acceptance
+properties:
+  objective:
+    type: string
+  trigger:
+    type: object
+    required:
+      - mode
+      - schedule
+      - timezone
+    properties:
+      mode:
+        type: string
+        enum:
+          - cron
+          - interval
+          - event
+          - manual
+      schedule:
+        type: string
+      timezone:
+        type: string
+  preconditions:
+    type: array
+    items:
+      type: string
+  actions:
+    type: array
+    items:
+      type: object
+      required:
+        - id
+        - description
+        - allowed_tools
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        allowed_tools:
+          type: array
+          items:
+            type: string
+        forbidden_tools:
+          type: array
+          items:
+            type: string
+  idempotency:
+    type: object
+    required:
+      - strategy
+  rollback:
+    type: object
+    required:
+      - possible
+      - procedure
+  alerting:
+    type: object
+    required:
+      - channels
+      - on_success
+      - on_failure
+  acceptance:
+    type: array
+    items:
+      type: string

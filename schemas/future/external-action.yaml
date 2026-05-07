@@ -1,0 +1,13 @@
+type: external_action
+version: 0.1.0
+status: future-placeholder
+description: Placeholder schema for future external-facing or irreversible agent actions. Not actively validated in the MVP.
+required:
+  - objective
+  - action
+  - audience
+  - channel
+  - approval
+  - constraints
+  - rollback
+  - acceptance
