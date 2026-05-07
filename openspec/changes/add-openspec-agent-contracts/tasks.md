@@ -100,20 +100,20 @@ Fase 1 is a foundation slice only. It is not spec-complete by itself; the MVP co
 
 ### 11. Hermes Integration Assets
 
-- [ ] 11.1 Create `hermes/skills/openspec-contracts/SKILL.md`.
-- [ ] 11.2 Define rules for when Hermes must propose before acting.
-- [ ] 11.3 Define explicit approval behavior and ambiguous approval rejection.
-- [ ] 11.4 Define the Hermes-MCP execution handoff: get_change → verify approved → load constraints → execute within bounds.
-- [ ] 11.5 Define scheduled task policy in the skill.
-- [ ] 11.6 Add example conversations for scheduled task approval flow.
-- [ ] 11.7 Add `hermes/mcp-config.example.json` for local stdio MCP configuration.
+- [x] 11.1 Create `hermes/skills/openspec-contracts/SKILL.md`.
+- [x] 11.2 Define rules for when Hermes must propose before acting.
+- [x] 11.3 Define explicit approval behavior and ambiguous approval rejection.
+- [x] 11.4 Define the Hermes-MCP execution handoff: get_change → verify approved → load constraints → execute within bounds.
+- [x] 11.5 Define scheduled task policy in the skill.
+- [x] 11.6 Add example conversations for scheduled task approval flow.
+- [x] 11.7 Add `hermes/mcp-config.example.json` for local stdio MCP configuration.
 
 ### 12. Examples and End-to-End Validation
 
-- [ ] 12.1 Add the expected approval summary example.
-- [ ] 12.2 Add the expected rejection example with reason.
+- [x] 12.1 Add the expected approval summary example.
+- [x] 12.2 Add the expected rejection example with reason.
 - [ ] 12.3 Validate the full flow: propose → approve → Hermes skill consumes constraints → execution respects boundaries.
-- [ ] 12.4 Document observed integration gaps and future phases.
+- [x] 12.4 Document observed integration gaps and future phases.
 
 ### 13. Final Verification (Fase 3)
 
