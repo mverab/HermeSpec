@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "openspec-mcp": {
+      "command": "uv",
+      "args": ["run", "openspec-mcp"],
+      "env": {
+        "OPENSPEC_WORKSPACE": ".",
+        "OPENSPEC_AGENT_CONTRACTS_APPROVALS_FILE": "openspec/approvals.jsonl",
+        "OPENSPEC_TELEMETRY": "0"
+      }
+    }
+  }
+}
