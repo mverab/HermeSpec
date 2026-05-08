@@ -18,7 +18,6 @@ from .models import (
     ProposeResponse,
     RejectRequest,
     RejectResponse,
-    SpecArtifact,
 )
 from .validators import validate_contract_payload
 
@@ -35,7 +34,9 @@ class OpenSpecContractService:
         self.config = config
 
     def propose(self, request: ProposeRequest) -> ProposeResponse:
-        change_id = validate_change_id(request.change_id or slugify_title(request.title))
+        change_id = validate_change_id(
+            request.change_id or slugify_title(request.title)
+        )
         validate_contract_payload(request.type, request.payload)
 
         change_dir = self.workspace.create_change(change_id)
@@ -48,7 +49,9 @@ class OpenSpecContractService:
 
         proposal_path.write_text(self._proposal_template(request), encoding="utf-8")
         tasks_path.write_text(self._tasks_template(), encoding="utf-8")
-        spec_path.write_text(self._scheduled_task_spec_template(request), encoding="utf-8")
+        spec_path.write_text(
+            self._scheduled_task_spec_template(request), encoding="utf-8"
+        )
 
         return ProposeResponse(
             change_id=change_id,
@@ -67,7 +70,9 @@ class OpenSpecContractService:
         approval_info = self._get_approval_info(change_id)
         return ChangeArtifacts(
             change_id=artifacts.change_id,
-            status=approval_info.get("status", "proposed") if approval_info else "proposed",
+            status=approval_info.get("status", "proposed")
+            if approval_info
+            else "proposed",
             path=artifacts.path,
             proposal=artifacts.proposal,
             tasks=artifacts.tasks,
@@ -83,7 +88,9 @@ class OpenSpecContractService:
             enriched.append(
                 ChangeSummary(
                     change_id=summary.change_id,
-                    status=approval_info.get("status", "proposed") if approval_info else "proposed",
+                    status=approval_info.get("status", "proposed")
+                    if approval_info
+                    else "proposed",
                     path=summary.path,
                     approval_required=summary.approval_required,
                     approval=approval_info,

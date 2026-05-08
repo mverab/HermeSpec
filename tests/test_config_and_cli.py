@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from openspec_mcp.config import load_config
@@ -24,7 +22,9 @@ def test_config_uses_environment_overrides(monkeypatch, tmp_path):
     workspace = tmp_path / "workspace"
     monkeypatch.setenv("OPENSPEC_WORKSPACE", str(workspace))
     monkeypatch.setenv("OPENSPEC_BIN", "custom-openspec")
-    monkeypatch.setenv("OPENSPEC_AGENT_CONTRACTS_APPROVALS_FILE", "logs/approvals.jsonl")
+    monkeypatch.setenv(
+        "OPENSPEC_AGENT_CONTRACTS_APPROVALS_FILE", "logs/approvals.jsonl"
+    )
 
     config = load_config()
 

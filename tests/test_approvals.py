@@ -1,6 +1,5 @@
 import json
 import threading
-from pathlib import Path
 
 import pytest
 
@@ -14,7 +13,6 @@ from openspec_mcp.approvals import (
     get_latest_status,
 )
 from openspec_mcp.errors import OpenSpecMCPError
-from openspec_mcp.models import ApprovalEvent
 
 
 def test_build_approval_event_requires_actor_channel_scope():
@@ -82,7 +80,9 @@ def test_approve_reject_updates_status(tmp_path):
     assert status is not None
     assert status["status"] == "approval"
 
-    reject_event = build_rejection_event("audit", actor="a", channel="cli", reason="nope")
+    reject_event = build_rejection_event(
+        "audit", actor="a", channel="cli", reason="nope"
+    )
     append_event(approvals_file, reject_event)
 
     status = get_latest_status(approvals_file, "audit")
@@ -91,9 +91,18 @@ def test_approve_reject_updates_status(tmp_path):
 
 def test_get_history_returns_all_events(tmp_path):
     approvals_file = tmp_path / "approvals.jsonl"
-    append_event(approvals_file, build_approval_event("audit", actor="a", channel="cli", scope="run"))
-    append_event(approvals_file, build_rejection_event("audit", actor="a", channel="cli", reason="nope"))
-    append_event(approvals_file, build_approval_event("other", actor="b", channel="cli", scope="run"))
+    append_event(
+        approvals_file,
+        build_approval_event("audit", actor="a", channel="cli", scope="run"),
+    )
+    append_event(
+        approvals_file,
+        build_rejection_event("audit", actor="a", channel="cli", reason="nope"),
+    )
+    append_event(
+        approvals_file,
+        build_approval_event("other", actor="b", channel="cli", scope="run"),
+    )
 
     history = get_history(approvals_file, "audit")
     assert len(history) == 2
@@ -103,7 +112,10 @@ def test_get_history_returns_all_events(tmp_path):
 
 def test_index_rebuilds_if_missing(tmp_path):
     approvals_file = tmp_path / "approvals.jsonl"
-    append_event(approvals_file, build_approval_event("audit", actor="a", channel="cli", scope="run"))
+    append_event(
+        approvals_file,
+        build_approval_event("audit", actor="a", channel="cli", scope="run"),
+    )
 
     index_path = approvals_file.with_suffix(".jsonl.index.json")
     index_path.unlink()
@@ -120,7 +132,9 @@ def test_concurrent_appends_do_not_corrupt_jsonl(tmp_path):
 
     def append_for(change_id: str) -> None:
         try:
-            event = build_approval_event(change_id, actor="a", channel="cli", scope="run")
+            event = build_approval_event(
+                change_id, actor="a", channel="cli", scope="run"
+            )
             append_event(approvals_file, event, max_retries=20, base_delay=0.01)
         except Exception as exc:
             errors.append(exc)

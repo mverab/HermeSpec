@@ -4,7 +4,6 @@ from mcp.server.fastmcp import FastMCP
 
 from .config import load_config
 from .errors import OpenSpecMCPError
-from .models import ProposeRequest
 from .service import OpenSpecContractService
 
 

@@ -20,7 +20,9 @@ def _truthy(value: str | None) -> bool:
 def load_config() -> Config:
     workspace = Path(os.environ.get("OPENSPEC_WORKSPACE", ".")).expanduser().resolve()
     openspec_bin = os.environ.get("OPENSPEC_BIN", "openspec")
-    approvals_setting = os.environ.get("OPENSPEC_AGENT_CONTRACTS_APPROVALS_FILE", "openspec/approvals.jsonl")
+    approvals_setting = os.environ.get(
+        "OPENSPEC_AGENT_CONTRACTS_APPROVALS_FILE", "openspec/approvals.jsonl"
+    )
     approvals_path = Path(approvals_setting).expanduser()
     if not approvals_path.is_absolute():
         approvals_path = workspace / approvals_path

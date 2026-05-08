@@ -13,7 +13,9 @@ from .errors import OpenSpecMCPError
 from .models import ApprovalEvent
 
 
-def _acquire_lock(lock_path: Path, max_retries: int = 5, base_delay: float = 0.05) -> None:
+def _acquire_lock(
+    lock_path: Path, max_retries: int = 5, base_delay: float = 0.05
+) -> None:
     """Acquire a lockfile using atomic O_CREAT|O_EXCL with exponential backoff."""
     for attempt in range(max_retries):
         try:
@@ -27,7 +29,7 @@ def _acquire_lock(lock_path: Path, max_retries: int = 5, base_delay: float = 0.0
                     f"Could not acquire lock after {max_retries} attempts: {lock_path}",
                     {"lock_path": str(lock_path)},
                 )
-            delay = base_delay * (2 ** attempt) + random.random() * 0.01
+            delay = base_delay * (2**attempt) + random.random() * 0.01
             time.sleep(delay)
 
 
@@ -62,7 +64,9 @@ def _save_index(index_path: Path, data: dict[str, Any]) -> None:
     index_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
-def _scan_jsonl_for_change_id(approvals_file: Path, change_id: str) -> list[ApprovalEvent]:
+def _scan_jsonl_for_change_id(
+    approvals_file: Path, change_id: str
+) -> list[ApprovalEvent]:
     events: list[ApprovalEvent] = []
     if not approvals_file.exists():
         return events

@@ -8,7 +8,9 @@ def test_validate_change_id_accepts_kebab_case():
     assert validate_change_id("audit-saas-subscriptions") == "audit-saas-subscriptions"
 
 
-@pytest.mark.parametrize("change_id", ["../escape", "/absolute", "Bad_Name", "bad--name", "bad.thing", ""])
+@pytest.mark.parametrize(
+    "change_id", ["../escape", "/absolute", "Bad_Name", "bad--name", "bad.thing", ""]
+)
 def test_validate_change_id_rejects_unsafe_values(change_id):
     with pytest.raises(OpenSpecMCPError) as exc:
         validate_change_id(change_id)

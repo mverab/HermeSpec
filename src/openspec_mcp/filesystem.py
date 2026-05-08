@@ -87,14 +87,21 @@ class OpenSpecWorkspace:
     def read_change(self, change_id: str) -> ChangeArtifacts:
         path = self.change_path(change_id)
         if not path.exists():
-            raise OpenSpecMCPError("NOT_FOUND", f"Change not found: {change_id}", {"change_id": change_id})
+            raise OpenSpecMCPError(
+                "NOT_FOUND", f"Change not found: {change_id}", {"change_id": change_id}
+            )
 
         specs: list[SpecArtifact] = []
         specs_dir = path / "specs"
         if specs_dir.exists():
             for spec_path in sorted(specs_dir.glob("**/*.md")):
                 safe_spec = self._ensure_inside_root(spec_path)
-                specs.append(SpecArtifact(path=str(safe_spec), content=safe_spec.read_text(encoding="utf-8")))
+                specs.append(
+                    SpecArtifact(
+                        path=str(safe_spec),
+                        content=safe_spec.read_text(encoding="utf-8"),
+                    )
+                )
 
         return ChangeArtifacts(
             change_id=change_id,
@@ -119,7 +126,9 @@ class OpenSpecWorkspace:
     def archive_change(self, change_id: str, actor: str) -> Path:
         source = self.change_path(change_id)
         if not source.exists():
-            raise OpenSpecMCPError("NOT_FOUND", f"Change not found: {change_id}", {"change_id": change_id})
+            raise OpenSpecMCPError(
+                "NOT_FOUND", f"Change not found: {change_id}", {"change_id": change_id}
+            )
 
         date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         dest = self.archive_path(change_id, date)
@@ -142,6 +151,8 @@ class OpenSpecWorkspace:
             "original_path": str(source),
             "archive_path": str(dest),
         }
-        (dest / "archive.record").write_text(json.dumps(record, indent=2), encoding="utf-8")
+        (dest / "archive.record").write_text(
+            json.dumps(record, indent=2), encoding="utf-8"
+        )
 
         return dest

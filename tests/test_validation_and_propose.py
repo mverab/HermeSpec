@@ -8,7 +8,11 @@ from openspec_mcp.validators import load_schema, validate_contract_payload
 
 VALID_SCHEDULED_TASK = {
     "objective": "Audit SaaS subscriptions weekly.",
-    "trigger": {"mode": "cron", "schedule": "0 9 * * MON", "timezone": "America/Merida"},
+    "trigger": {
+        "mode": "cron",
+        "schedule": "0 9 * * MON",
+        "timezone": "America/Merida",
+    },
     "preconditions": ["Billing exports are available."],
     "actions": [
         {
@@ -18,8 +22,15 @@ VALID_SCHEDULED_TASK = {
         }
     ],
     "idempotency": {"strategy": "Use week start as dedupe key."},
-    "rollback": {"possible": False, "procedure": "Read-only task; no rollback required."},
-    "alerting": {"channels": ["telegram"], "on_success": "alert_if_threshold_crossed", "on_failure": "always_alert"},
+    "rollback": {
+        "possible": False,
+        "procedure": "Read-only task; no rollback required.",
+    },
+    "alerting": {
+        "channels": ["telegram"],
+        "on_success": "alert_if_threshold_crossed",
+        "on_failure": "always_alert",
+    },
     "acceptance": ["Report when spend increases more than 15%."],
 }
 
@@ -61,9 +72,21 @@ def test_propose_creates_all_required_artifacts(tmp_path):
     assert response.change_id == "audit-saas-subscriptions-weekly"
     assert response.status == "proposed"
     assert response.approval_required is True
-    assert (tmp_path / "openspec" / "changes" / response.change_id / "proposal.md").exists()
-    assert (tmp_path / "openspec" / "changes" / response.change_id / "tasks.md").exists()
-    assert (tmp_path / "openspec" / "changes" / response.change_id / "specs" / "scheduled-task" / "spec.md").exists()
+    assert (
+        tmp_path / "openspec" / "changes" / response.change_id / "proposal.md"
+    ).exists()
+    assert (
+        tmp_path / "openspec" / "changes" / response.change_id / "tasks.md"
+    ).exists()
+    assert (
+        tmp_path
+        / "openspec"
+        / "changes"
+        / response.change_id
+        / "specs"
+        / "scheduled-task"
+        / "spec.md"
+    ).exists()
 
 
 def test_get_and_list_change_after_propose(tmp_path):

@@ -10,13 +10,25 @@ from .errors import OpenSpecMCPError
 
 def load_schema(schema_name: str, schemas_root: Path | None = None) -> dict[str, Any]:
     root = schemas_root or Path(__file__).resolve().parents[2] / "schemas"
-    filename = "scheduled-task.yaml" if schema_name == "scheduled_task" else f"{schema_name}.yaml"
+    filename = (
+        "scheduled-task.yaml"
+        if schema_name == "scheduled_task"
+        else f"{schema_name}.yaml"
+    )
     path = root / filename
     if not path.exists():
-        raise OpenSpecMCPError("SCHEMA_NOT_FOUND", f"Schema not found: {schema_name}", {"schema": schema_name})
+        raise OpenSpecMCPError(
+            "SCHEMA_NOT_FOUND",
+            f"Schema not found: {schema_name}",
+            {"schema": schema_name},
+        )
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
-        raise OpenSpecMCPError("SCHEMA_INVALID", f"Schema is invalid: {schema_name}", {"schema": schema_name})
+        raise OpenSpecMCPError(
+            "SCHEMA_INVALID",
+            f"Schema is invalid: {schema_name}",
+            {"schema": schema_name},
+        )
     return data
 
 
