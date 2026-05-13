@@ -25,6 +25,15 @@ The system SHALL expose `openspec.propose` to create a new OpenSpec change for a
 - **AND** the system writes at least one spec artifact
 - **AND** the system returns the change ID, status, artifact paths, and whether approval is required
 
+#### Scenario: Propose external action contract
+- **WHEN** `openspec.propose` is called with type `external_action`
+- **THEN** the system validates the payload against `schemas/external-action.yaml`
+- **AND** the system creates a new change directory under `openspec/changes/<change_id>/`
+- **AND** the system writes `proposal.md`
+- **AND** the system writes `tasks.md`
+- **AND** the system writes at least one spec artifact
+- **AND** the system returns the change ID, status, artifact paths, and whether approval is required
+
 #### Scenario: Proposal conflicts with existing change
 - **WHEN** `openspec.propose` is called for a change ID that already exists
 - **THEN** the system rejects the request without overwriting existing artifacts
@@ -93,17 +102,12 @@ The system SHALL define a `scheduled_task` schema for recurring or scheduled age
 - **THEN** the contract requires objective, trigger, preconditions, actions, idempotency, rollback, alerting, and acceptance criteria
 
 ### Requirement: Additional No-Code Schemas (Future)
-The system SHALL include placeholder schemas for `research` and `external_action` contracts for future phases.
+The system SHALL include placeholder schemas for `research` contracts for future phases.
 
 #### Scenario: Research schema placeholder exists
 - **WHEN** the repository is inspected
 - **THEN** `schemas/future/research.yaml` defines required fields for research objective, scope, sources, methodology, deliverable, and acceptance criteria
-- **AND** the system does not enforce validation against it in the MVP
-
-#### Scenario: External action schema placeholder exists
-- **WHEN** the repository is inspected
-- **THEN** `schemas/future/external-action.yaml` defines required fields for objective, action, audience, channel, approval, constraints, rollback, and acceptance criteria
-- **AND** the system does not enforce validation against it in the MVP
+- **AND** the system does not enforce validation against it in the current phase
 
 ### Requirement: Hermes Skill
 The system SHALL provide a Hermes skill named `openspec-contracts`.

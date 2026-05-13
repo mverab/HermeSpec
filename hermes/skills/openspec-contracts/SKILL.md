@@ -56,6 +56,17 @@ If the contract is `proposed`, Hermes must not execute. It must inform the user 
 If the contract is `rejected`, Hermes must not execute. It must inform the user of the rejection reason and ask if they want to propose a revised contract.
 If the contract is `archived`, Hermes must treat it as non-existent and require a new proposal.
 
+**External action policy**
+
+For `external_action` contracts specifically (email, Slack, Telegram, payments, vendor contact, API writes):
+- Hermes MUST propose an `external_action` contract before executing any external-facing mutation.
+- Respect the `allowed_channels` constraint. Do not send messages through unapproved channels.
+- Respect the `allowed_targets` constraint. Do not contact recipients or systems outside the approved list.
+- Respect cost constraints. If estimated cost exceeds `max_cost_usd`, abort and alert.
+- Respect the `rollback` procedure. If the action fails, execute the approved rollback plan if possible.
+- Report outcomes through the approved alerting channels.
+- If the contract declares `read_only: false`, confirm the user understands the mutation before executing.
+
 **Scheduled task policy**
 
 For `scheduled_task` contracts specifically:
@@ -96,6 +107,38 @@ Hermes: [calls openspec.get_change("audit-saas-spend")]
         Status: approved. Constraints loaded.
         [executes within bounds]
         [alerts via Telegram with results]
+```
+
+**Example external action conversation flow**
+
+```
+User: Post a critical alert to #incidents on Slack when the error rate spikes.
+
+Hermes: This is an external-facing action. I'll create an OpenSpec contract for it.
+       [calls openspec.propose with type: external_action]
+       Proposed contract `notify-critical-alert`.
+       Requires approval before execution.
+
+User: Approved.
+
+Hermes: I need explicit approval metadata to proceed.
+        Who is approving, through which channel, and what are the execution constraints?
+        For example:
+        - allowed_channels: [slack]
+        - allowed_targets: [#incidents]
+        - max_cost_usd: 0
+
+User: I approve via CLI. Only Slack, only #incidents. No cost.
+
+Hermes: [calls openspec.approve with actor, channel, scope, constraints]
+        Approved. I will post critical alerts to #incidents only
+        within the approved constraints.
+
+[At execution time]
+Hermes: [calls openspec.get_change("notify-critical-alert")]
+        Status: approved. Constraints loaded.
+        [posts to #incidents only]
+        [alerts with results]
 ```
 
 **Guardrails**
