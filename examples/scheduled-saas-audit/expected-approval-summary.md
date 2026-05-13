@@ -58,3 +58,33 @@ Status after approval (`openspec.get_change`):
   }
 }
 ```
+
+## Execution transcript requirements
+
+At execution time Hermes must call `openspec.get_change("audit-saas-subscriptions-weekly")`, verify `status: "approval"` and `approval.latest_event.type: "approval"`, then surface measurable proof before claiming completion:
+
+```json
+{
+  "change_id": "audit-saas-subscriptions-weekly",
+  "verified_status": "approval",
+  "verified_approval_event_type": "approval",
+  "constraints_loaded": {
+    "max_cost_usd": 50,
+    "allowed_tools": ["stripe.read", "spreadsheet.read"],
+    "read_only": true,
+    "alerting": ["telegram"]
+  },
+  "observed_current_spend_usd": 1280.00,
+  "observed_baseline_spend_usd": 1100.00,
+  "observed_spend_increase_percent": 16.36,
+  "acceptance_criteria_evidence": [
+    {
+      "criterion": "Report when spend increases more than 15%.",
+      "evidence": "Observed increase was 16.36%, so Telegram alert was sent."
+    }
+  ],
+  "channels_used": ["telegram"],
+  "tools_used": ["stripe.read", "spreadsheet.read"],
+  "mutations_performed": []
+}
+```

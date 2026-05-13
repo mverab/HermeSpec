@@ -102,9 +102,16 @@ def append_event(
 
         index_path = _index_path(approvals_file)
         index = _load_index(index_path)
+        previous = index.get(event.change_id)
+        history_count = 1
+        if isinstance(previous, dict) and isinstance(
+            previous.get("history_count"), int
+        ):
+            history_count = previous["history_count"] + 1
         index[event.change_id] = {
             "offset": offset,
             "event": event.__dict__,
+            "history_count": history_count,
         }
         _save_index(index_path, index)
     finally:
@@ -125,10 +132,13 @@ def get_latest_status(
     entry = index.get(change_id)
     if entry and isinstance(entry.get("event"), dict):
         event = ApprovalEvent(**entry["event"])
+        history_count = entry.get("history_count")
+        if not isinstance(history_count, int):
+            history_count = len(_scan_jsonl_for_change_id(approvals_file, change_id))
         return {
             "status": event.type,
             "latest_event": event,
-            "history_count": 1,
+            "history_count": history_count,
         }
 
     events = _scan_jsonl_for_change_id(approvals_file, change_id)

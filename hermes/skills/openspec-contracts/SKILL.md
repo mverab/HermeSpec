@@ -45,12 +45,14 @@ Hermes must also reject ambiguous constraints. If the user says "keep it cheap" 
 Before executing a contract-governed task, Hermes must:
 
 1. Call `openspec.get_change(change_id)`.
-2. Verify `status == "approved"`.
-3. Load `approval.constraints` into the execution context.
+2. Verify `status == "approved"` and `approval.latest_event.type == "approval"`.
+3. Load `approval.latest_event.constraints` into the execution context.
 4. Refuse execution if:
    - No approved contract exists.
    - The request exceeds the approved constraints.
-   - The contract has expired (check `approval.expiration`).
+   - The contract has expired (check `approval.latest_event.expiration`).
+
+The immediate response from `openspec.approve` may say `status: "approved"`, but execution MUST use the later `openspec.get_change` result and verify the latest approval event. Hermes must not execute from the approval response alone.
 
 If the contract is `proposed`, Hermes must not execute. It must inform the user that approval is required.
 If the contract is `rejected`, Hermes must not execute. It must inform the user of the rejection reason and ask if they want to propose a revised contract.
@@ -60,6 +62,7 @@ If the contract is `archived`, Hermes must treat it as non-existent and require 
 
 For `external_action` contracts specifically (email, Slack, Telegram, payments, vendor contact, API writes):
 - Hermes MUST propose an `external_action` contract before executing any external-facing mutation.
+- Hermes MUST wait for explicit approval with `scope: execute_external_action` before executing the mutation.
 - Respect the `allowed_channels` constraint. Do not send messages through unapproved channels.
 - Respect the `allowed_targets` constraint. Do not contact recipients or systems outside the approved list.
 - Respect cost constraints. If estimated cost exceeds `max_cost_usd`, abort and alert.
@@ -76,6 +79,27 @@ For `scheduled_task` contracts specifically:
 - Respect time constraints. If estimated duration exceeds `max_duration_minutes`, abort and alert.
 - Report outcomes through the approved alerting channels.
 - Use the specified idempotency strategy to prevent duplicate work.
+
+**Parallel agent governance**
+
+If Hermes delegates any contract-governed work to parallel agents, Hermes MUST assign disjoint ownership before delegation. Each agent handoff must name:
+- The contract ID and relevant approval constraints.
+- The files, systems, channels, or data ranges the agent owns.
+- The files, systems, channels, or data ranges the agent must not touch.
+- The clear deliverables and evidence each agent must return.
+
+Hermes MUST refuse to run parallel agents when ownership overlaps, deliverables are ambiguous, or the contract does not permit delegation.
+
+**Transcript proof and goal conditions**
+
+Hermes MUST surface measurable proof in the transcript before claiming a scheduled task or external action satisfied its goal conditions. The transcript must include:
+- Contract ID and verified approval status.
+- Constraints loaded from `approval.latest_event.constraints`.
+- Tools, channels, targets, files, or systems actually used.
+- The acceptance criteria and the observed metric or artifact that proves each criterion.
+- Any skipped action, abort, rollback, or alert with the constraint or failure that caused it.
+
+Hermes must not mark a contract-governed task complete from intent, tool invocation, or a message-send attempt alone. Completion requires observed evidence tied to the contract acceptance criteria.
 
 **Example conversation flow**
 
@@ -104,9 +128,9 @@ Hermes: [calls openspec.approve with actor, channel, scope, constraints]
 
 [At execution time]
 Hermes: [calls openspec.get_change("audit-saas-spend")]
-        Status: approved. Constraints loaded.
+        Status: approved. Latest event type: approval. Constraints loaded.
         [executes within bounds]
-        [alerts via Telegram with results]
+        [alerts via Telegram with measured spend delta and acceptance evidence]
 ```
 
 **Example external action conversation flow**
@@ -136,9 +160,9 @@ Hermes: [calls openspec.approve with actor, channel, scope, constraints]
 
 [At execution time]
 Hermes: [calls openspec.get_change("notify-critical-alert")]
-        Status: approved. Constraints loaded.
+        Status: approved. Latest event type: approval. Constraints loaded.
         [posts to #incidents only]
-        [alerts with results]
+        [reports message ID, target, channel, and acceptance evidence]
 ```
 
 **Guardrails**
@@ -149,3 +173,4 @@ Hermes: [calls openspec.get_change("notify-critical-alert")]
 - Always load constraints into execution context before acting.
 - Always check expiration before executing.
 - If constraints are missing or ambiguous, ask for clarification rather than assuming defaults.
+- Never claim goal completion without measurable transcript proof tied to acceptance criteria.

@@ -75,6 +75,63 @@ def test_validate_external_action_requires_core_fields():
     assert "action" in exc.value.detail["missing"]
 
 
+def test_validate_external_action_rejects_missing_nested_action_field():
+    payload = dict(VALID_EXTERNAL_ACTION)
+    payload["action"] = {
+        "type": "send_message",
+        "target": "#incidents",
+    }
+
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("external_action", payload)
+
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "action.description" in exc.value.detail["missing"]
+
+
+def test_validate_external_action_requires_explicit_approval():
+    payload = dict(VALID_EXTERNAL_ACTION)
+    payload["approval"] = {"required": False, "minimum_approvers": 1}
+
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("external_action", payload)
+
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert exc.value.detail["invalid"] == [
+        {"path": "approval.required", "expected": [True], "actual": False}
+    ]
+
+
+def test_validate_scheduled_task_rejects_missing_nested_trigger_field():
+    payload = dict(VALID_SCHEDULED_TASK)
+    payload["trigger"] = {
+        "mode": "cron",
+        "schedule": "0 9 * * MON",
+    }
+
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("scheduled_task", payload)
+
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "trigger.timezone" in exc.value.detail["missing"]
+
+
+def test_validate_scheduled_task_rejects_missing_action_item_field():
+    payload = dict(VALID_SCHEDULED_TASK)
+    payload["actions"] = [
+        {
+            "id": "compare-spend",
+            "description": "Compare this week spend against prior baseline.",
+        }
+    ]
+
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("scheduled_task", payload)
+
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "actions.0.allowed_tools" in exc.value.detail["missing"]
+
+
 def test_schema_files_are_available():
     scheduled = load_schema("scheduled_task")
     external = load_schema("external_action")
@@ -82,6 +139,8 @@ def test_schema_files_are_available():
 
     assert scheduled["type"] == "scheduled_task"
     assert external["type"] == "external_action"
+    assert external.get("status") != "future-placeholder"
+    assert "properties" in external
     assert future_research["type"] == "research"
 
 
@@ -169,6 +228,33 @@ def test_propose_external_action_rejects_missing_fields(tmp_path):
 
     assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
     assert "constraints" in exc.value.detail["missing"]
+    assert not (tmp_path / "openspec" / "changes" / "missing-fields").exists()
+
+
+def test_propose_external_action_rejects_invalid_nested_payload_before_writing(
+    tmp_path,
+):
+    service = OpenSpecContractService(tmp_path)
+    payload = dict(VALID_EXTERNAL_ACTION)
+    payload["action"] = {
+        "type": "send_message",
+        "target": "#incidents",
+    }
+
+    with pytest.raises(OpenSpecMCPError) as exc:
+        service.propose(
+            ProposeRequest(
+                title="Notify team",
+                description="Test missing nested fields.",
+                type="external_action",
+                change_id="missing-nested-fields",
+                payload=payload,
+            )
+        )
+
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "action.description" in exc.value.detail["missing"]
+    assert not (tmp_path / "openspec" / "changes" / "missing-nested-fields").exists()
 
 
 def test_get_and_list_change_after_propose(tmp_path):

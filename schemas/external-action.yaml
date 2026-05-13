@@ -1,7 +1,7 @@
 type: external_action
 version: 0.1.0
-status: future-placeholder
-description: Placeholder schema for future external-facing or irreversible agent actions. Not actively validated in the MVP.
+status: active
+description: Contract schema for agent operations that interact with external systems.
 required:
   - objective
   - action
@@ -11,3 +11,50 @@ required:
   - constraints
   - rollback
   - acceptance
+properties:
+  objective:
+    type: string
+  action:
+    type: object
+    required:
+      - type
+      - target
+      - description
+    properties:
+      type:
+        type: string
+      target:
+        type: string
+      description:
+        type: string
+  audience:
+    type: string
+  channel:
+    type: string
+  approval:
+    type: object
+    required:
+      - required
+    properties:
+      required:
+        type: boolean
+        enum:
+          - true
+      minimum_approvers:
+        type: integer
+  constraints:
+    type: object
+  rollback:
+    type: object
+    required:
+      - possible
+      - procedure
+    properties:
+      possible:
+        type: boolean
+      procedure:
+        type: string
+  acceptance:
+    type: array
+    items:
+      type: string

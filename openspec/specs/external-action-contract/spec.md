@@ -1,7 +1,12 @@
 # external-action-contract Specification
 
 ## Purpose
-TBD - created by archiving change add-external-action-schema. Update Purpose after archive.
+Define the active `external_action` contract type for agent operations that
+mutate external systems. The contract captures objective, target audience,
+channel, approval requirements, execution constraints, rollback, and acceptance
+criteria so Hermes can wait for explicit approval before performing
+external-facing work.
+
 ## Requirements
 ### Requirement: External Action Schema Definition
 The system SHALL define an `external_action` schema for agent operations that interact with external systems.
@@ -52,4 +57,3 @@ The system SHALL instruct Hermes to propose an external action contract before e
 #### Scenario: Hermes receives trivial internal task
 - **WHEN** Hermes receives a simple low-risk internal request with no external side effects
 - **THEN** the skill instructs Hermes to answer directly without creating an OpenSpec contract
-

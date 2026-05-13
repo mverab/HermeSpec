@@ -173,40 +173,14 @@ def test_server_lifecycle_propose_approve_reject_archive(monkeypatch, tmp_path):
             server.call_tool("openspec.get_change", {"change_id": "lifecycle-audit"})
         )
     )
-    assert get_result["status"] == "approval"
+    assert get_result["status"] == "approved"
     assert get_result["approval"]["status"] == "approval"
 
     # List shows approved
     list_result = _json_result(
         asyncio.run(server.call_tool("openspec.list_changes", {}))
     )
-    assert list_result["changes"][0]["status"] == "approval"
-
-    # Reject
-    reject_result = _json_result(
-        asyncio.run(
-            server.call_tool(
-                "openspec.reject",
-                {
-                    "payload": {
-                        "change_id": "lifecycle-audit",
-                        "actor": "user@example.com",
-                        "channel": "cli",
-                        "reason": "Budget cut.",
-                    }
-                },
-            )
-        )
-    )
-    assert reject_result["status"] == "rejected"
-
-    # Get (rejected)
-    get_result = _json_result(
-        asyncio.run(
-            server.call_tool("openspec.get_change", {"change_id": "lifecycle-audit"})
-        )
-    )
-    assert get_result["status"] == "rejection"
+    assert list_result["changes"][0]["status"] == "approved"
 
     # Archive
     archive_result = _json_result(
@@ -231,3 +205,136 @@ def test_server_lifecycle_propose_approve_reject_archive(monkeypatch, tmp_path):
         )
     )
     assert get_result["error"]["code"] == "NOT_FOUND"
+
+
+def test_server_archive_rejects_unapproved_change(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENSPEC_WORKSPACE", str(tmp_path))
+    server = build_server()
+    scheduled_task = {
+        "objective": "Audit SaaS subscriptions weekly.",
+        "trigger": {
+            "mode": "cron",
+            "schedule": "0 9 * * MON",
+            "timezone": "America/Merida",
+        },
+        "preconditions": ["Billing exports are available."],
+        "actions": [],
+        "idempotency": {"strategy": "Use week start as dedupe key."},
+        "rollback": {
+            "possible": False,
+            "procedure": "Read-only task; no rollback required.",
+        },
+        "alerting": {
+            "channels": ["telegram"],
+            "on_success": "alert_if_threshold_crossed",
+            "on_failure": "always_alert",
+        },
+        "acceptance": ["Report when spend increases more than 15%."],
+    }
+    _json_result(
+        asyncio.run(
+            server.call_tool(
+                "openspec.propose",
+                {
+                    "payload": {
+                        "title": "Audit SaaS subscriptions weekly",
+                        "description": "Audit SaaS spend every Monday.",
+                        "type": "scheduled_task",
+                        "change_id": "unapproved-archive",
+                        "payload": scheduled_task,
+                    }
+                },
+            )
+        )
+    )
+
+    archive_result = _json_result(
+        asyncio.run(
+            server.call_tool(
+                "openspec.archive",
+                {
+                    "payload": {
+                        "change_id": "unapproved-archive",
+                        "actor": "user@example.com",
+                    }
+                },
+            )
+        )
+    )
+
+    assert archive_result["error"]["code"] == "ARCHIVE_NOT_ALLOWED"
+    assert (tmp_path / "openspec" / "changes" / "unapproved-archive").exists()
+
+
+def test_server_archive_rejects_rejected_change(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENSPEC_WORKSPACE", str(tmp_path))
+    server = build_server()
+    scheduled_task = {
+        "objective": "Audit SaaS subscriptions weekly.",
+        "trigger": {
+            "mode": "cron",
+            "schedule": "0 9 * * MON",
+            "timezone": "America/Merida",
+        },
+        "preconditions": ["Billing exports are available."],
+        "actions": [],
+        "idempotency": {"strategy": "Use week start as dedupe key."},
+        "rollback": {
+            "possible": False,
+            "procedure": "Read-only task; no rollback required.",
+        },
+        "alerting": {
+            "channels": ["telegram"],
+            "on_success": "alert_if_threshold_crossed",
+            "on_failure": "always_alert",
+        },
+        "acceptance": ["Report when spend increases more than 15%."],
+    }
+    _json_result(
+        asyncio.run(
+            server.call_tool(
+                "openspec.propose",
+                {
+                    "payload": {
+                        "title": "Audit SaaS subscriptions weekly",
+                        "description": "Audit SaaS spend every Monday.",
+                        "type": "scheduled_task",
+                        "change_id": "rejected-archive",
+                        "payload": scheduled_task,
+                    }
+                },
+            )
+        )
+    )
+    _json_result(
+        asyncio.run(
+            server.call_tool(
+                "openspec.reject",
+                {
+                    "payload": {
+                        "change_id": "rejected-archive",
+                        "actor": "user@example.com",
+                        "channel": "cli",
+                        "reason": "Not approved.",
+                    }
+                },
+            )
+        )
+    )
+
+    archive_result = _json_result(
+        asyncio.run(
+            server.call_tool(
+                "openspec.archive",
+                {
+                    "payload": {
+                        "change_id": "rejected-archive",
+                        "actor": "user@example.com",
+                    }
+                },
+            )
+        )
+    )
+
+    assert archive_result["error"]["code"] == "ARCHIVE_NOT_ALLOWED"
+    assert (tmp_path / "openspec" / "changes" / "rejected-archive").exists()

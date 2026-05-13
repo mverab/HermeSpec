@@ -33,6 +33,27 @@ def test_config_uses_environment_overrides(monkeypatch, tmp_path):
     assert config.approvals_file == workspace / "logs" / "approvals.jsonl"
 
 
+@pytest.mark.parametrize(
+    "approvals_setting",
+    [
+        "../approvals.jsonl",
+        "/tmp/openspec-approvals.jsonl",
+    ],
+)
+def test_config_rejects_approvals_file_outside_workspace(
+    monkeypatch, tmp_path, approvals_setting
+):
+    workspace = tmp_path / "workspace"
+    monkeypatch.setenv("OPENSPEC_WORKSPACE", str(workspace))
+    monkeypatch.setenv("OPENSPEC_AGENT_CONTRACTS_APPROVALS_FILE", approvals_setting)
+
+    with pytest.raises(OpenSpecMCPError) as exc:
+        load_config()
+
+    assert exc.value.code == "PATH_TRAVERSAL"
+    assert exc.value.detail["workspace"] == str(workspace.resolve())
+
+
 def test_cli_availability_returns_structured_error_for_missing_binary(tmp_path):
     cli = OpenSpecCLI(bin_name="definitely-missing-openspec-bin", workspace=tmp_path)
 

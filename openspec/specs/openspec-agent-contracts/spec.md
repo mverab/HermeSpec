@@ -1,7 +1,11 @@
 # openspec-agent-contracts Specification
 
 ## Purpose
-TBD - created by archiving change add-openspec-agent-contracts. Update Purpose after archive.
+Define the MCP contract lifecycle that lets Hermes and other agents propose,
+inspect, approve, reject, and archive OpenSpec-backed work before execution.
+The MVP supports validated `scheduled_task` and `external_action` contracts,
+keeps approval history append-only, and leaves execution outside the MCP server.
+
 ## Requirements
 ### Requirement: MCP Server Availability
 The system SHALL provide an MCP server named `openspec-mcp` that exposes OpenSpec agent contract tools over MCP.
@@ -144,4 +148,3 @@ The system SHALL maintain append-only approval and rejection history.
 #### Scenario: Approval history is inspectable
 - **WHEN** approval or rejection actions occur
 - **THEN** each action is recorded as one JSON object per line in `openspec/approvals.jsonl`
-

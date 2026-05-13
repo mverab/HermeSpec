@@ -2,14 +2,24 @@
 
 HermeSpec provides an OpenSpec-backed contract layer for long-running AI agents.
 
-The MVP implements the full contract lifecycle for scheduled tasks:
+The MVP implements the OpenSpec contract lifecycle for two active contract types:
 
-- `openspec.propose` — create a contract with artifacts.
-- `openspec.get_change` — retrieve a contract and its current approval status.
-- `openspec.list_changes` — list active contracts.
-- `openspec.approve` — record explicit approval with constraints.
-- `openspec.reject` — record rejection with reason.
-- `openspec.archive` — move completed contracts to archive.
+- `scheduled_task` - recurring or scheduled agent operations.
+- `external_action` - external-facing mutations such as email, Slack, payments,
+  vendor contact, or API writes.
+
+The MCP server exposes:
+
+- `openspec.propose` - create a contract with artifacts.
+- `openspec.get_change` - retrieve a contract and its current approval status.
+- `openspec.list_changes` - list active contracts.
+- `openspec.approve` - record explicit approval with constraints.
+- `openspec.reject` - record rejection with reason.
+- `openspec.archive` - move completed contracts to archive.
+
+`scheduled_task` and `external_action` payloads are validated before artifacts
+are created. `research` remains a future placeholder schema and is not active in
+the MVP.
 
 Hermes integration includes a skill (`hermes/skills/openspec-contracts/SKILL.md`) that defines when contracts are required, how to verify approval, and how to execute within approved constraints.
 
@@ -18,11 +28,17 @@ Hermes integration includes a skill (`hermes/skills/openspec-contracts/SKILL.md`
 - Python 3.11+
 - `uv`
 - Node.js 20.19+
-- OpenSpec CLI available as `openspec`
+- OpenSpec CLI installed separately and available as `openspec`
 
 ## Development
 
-Install dependencies and run tests:
+Install dependencies:
+
+```bash
+uv sync
+```
+
+Run tests:
 
 ```bash
 uv run pytest
@@ -32,6 +48,12 @@ Run the MCP server locally:
 
 ```bash
 uv run openspec-mcp
+```
+
+Run packaging verification:
+
+```bash
+uv build
 ```
 
 ## Configuration
@@ -48,3 +70,13 @@ The server reads:
 See `hermes/mcp-config.example.json` for an example MCP client configuration that connects Hermes to the `openspec-mcp` server.
 
 See `hermes/skills/openspec-contracts/SKILL.md` for the Hermes skill that governs contract-based execution.
+
+## MVP Ship Gate
+
+Before an MVP ship decision, verify:
+
+- `uv run pytest` exits 0.
+- `uv build` exits 0.
+- README scope matches the active contract types: `scheduled_task` and `external_action`.
+- Living spec Purpose sections are concrete and no longer contain archived-change placeholders.
+- Any worker team uses 3-5 workers with disjoint write ownership.

@@ -1,7 +1,13 @@
 import asyncio
 import json
+from pathlib import Path
 
 from openspec_mcp.server import build_server
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+HERMES_SKILL = REPO_ROOT / "hermes" / "skills" / "openspec-contracts" / "SKILL.md"
+SCHEDULED_SAAS_EXAMPLE = REPO_ROOT / "examples" / "scheduled-saas-audit"
 
 
 def _json_result(content_blocks):
@@ -13,7 +19,7 @@ def test_hermes_full_flow_propose_approve_consume_constraints(monkeypatch, tmp_p
 
     1. Hermes proposes a scheduled task contract.
     2. User approves with explicit constraints.
-    3. Hermes calls get_change, verifies status is approved, and loads constraints.
+    3. Hermes calls get_change, verifies approval event status, and loads constraints.
     4. Execution must respect the boundaries defined in constraints.
     """
     monkeypatch.setenv("OPENSPEC_WORKSPACE", str(tmp_path))
@@ -101,7 +107,7 @@ def test_hermes_full_flow_propose_approve_consume_constraints(monkeypatch, tmp_p
     )
 
     # Approval status is surfaced
-    assert get_result["status"] == "approval"
+    assert get_result["status"] == "approved"
     assert get_result["approval"] is not None
     assert get_result["approval"]["status"] == "approval"
 
@@ -125,7 +131,7 @@ def test_hermes_full_flow_propose_approve_consume_constraints(monkeypatch, tmp_p
     assert len(list_result["changes"]) == 1
     listed = list_result["changes"][0]
     assert listed["change_id"] == "hermes-audit-flow"
-    assert listed["status"] == "approval"
+    assert listed["status"] == "approved"
     assert listed["approval"]["status"] == "approval"
     assert listed["approval"]["latest_event"]["constraints"] == constraints
 
@@ -198,7 +204,7 @@ def test_hermes_external_action_full_flow_propose_approve_consume_constraints(
 
     1. Hermes proposes an external action contract.
     2. User approves with explicit constraints.
-    3. Hermes calls get_change, verifies status is approved, and loads constraints.
+    3. Hermes calls get_change, verifies approval event status, and loads constraints.
     4. Execution must respect the boundaries defined in constraints.
     """
     monkeypatch.setenv("OPENSPEC_WORKSPACE", str(tmp_path))
@@ -277,7 +283,7 @@ def test_hermes_external_action_full_flow_propose_approve_consume_constraints(
         )
     )
 
-    assert get_result["status"] == "approval"
+    assert get_result["status"] == "approved"
     assert get_result["approval"] is not None
     assert get_result["approval"]["status"] == "approval"
 
@@ -299,6 +305,43 @@ def test_hermes_external_action_full_flow_propose_approve_consume_constraints(
     assert len(list_result["changes"]) == 1
     listed = list_result["changes"][0]
     assert listed["change_id"] == "hermes-external-action-flow"
-    assert listed["status"] == "approval"
+    assert listed["status"] == "approved"
     assert listed["approval"]["status"] == "approval"
     assert listed["approval"]["latest_event"]["constraints"] == constraints
+
+
+def test_hermes_skill_uses_get_change_approval_status_for_execution_handoff():
+    """Hermes policy must match the MCP status shape returned by get_change."""
+    skill_text = HERMES_SKILL.read_text(encoding="utf-8")
+
+    assert 'status == "approved"' in skill_text
+    assert 'approval.latest_event.type == "approval"' in skill_text
+
+
+def test_hermes_skill_requires_transcript_proof_for_goal_conditions():
+    """Goal conditions are not satisfied unless measurable proof is surfaced."""
+    skill_text = HERMES_SKILL.read_text(encoding="utf-8")
+
+    assert "MUST surface measurable proof in the transcript" in skill_text
+    assert "acceptance criteria" in skill_text
+    assert "observed metric" in skill_text
+
+
+def test_hermes_skill_requires_disjoint_parallel_agent_deliverables():
+    """Parallel agents must not share ambiguous ownership or deliverables."""
+    skill_text = HERMES_SKILL.read_text(encoding="utf-8")
+
+    assert "parallel agents" in skill_text
+    assert "disjoint ownership" in skill_text
+    assert "clear deliverables" in skill_text
+
+
+def test_scheduled_saas_example_surfaces_execution_evidence_requirements():
+    """The example must show what proof Hermes reports after execution."""
+    example_text = (
+        SCHEDULED_SAAS_EXAMPLE / "expected-approval-summary.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Execution transcript requirements" in example_text
+    assert "observed_spend_increase_percent" in example_text
+    assert "acceptance_criteria_evidence" in example_text

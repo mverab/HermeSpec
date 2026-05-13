@@ -110,6 +110,24 @@ def test_get_history_returns_all_events(tmp_path):
     assert history[1].type == "rejection"
 
 
+def test_latest_status_reports_full_history_count_from_index(tmp_path):
+    approvals_file = tmp_path / "approvals.jsonl"
+    append_event(
+        approvals_file,
+        build_approval_event("audit", actor="a", channel="cli", scope="run"),
+    )
+    append_event(
+        approvals_file,
+        build_rejection_event("audit", actor="a", channel="cli", reason="nope"),
+    )
+
+    status = get_latest_status(approvals_file, "audit")
+
+    assert status is not None
+    assert status["status"] == "rejection"
+    assert status["history_count"] == 2
+
+
 def test_index_rebuilds_if_missing(tmp_path):
     approvals_file = tmp_path / "approvals.jsonl"
     append_event(
