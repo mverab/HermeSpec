@@ -1,20 +1,22 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  HermeSpec provides a Python 3.11+ stdio MCP server named `openspec-mcp`.
+  The MVP manages OpenSpec-backed agent contracts for `scheduled_task` and
+  `external_action` contract types. The server creates proposal, task, and spec
+  artifacts, records approval or rejection events in `openspec/approvals.jsonl`,
+  and archives completed changes. Hermes remains responsible for execution and
+  must not execute a contract before explicit approval.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  goal:
+    - Use measurable completion conditions, including concrete verification commands.
+    - Include a bounded stop condition for the work.
+  proposal:
+    - State active contract types explicitly when the change affects MVP scope.
+    - Keep execution separate from proposal and approval lifecycle behavior.
+  tasks:
+    - Use checkable tasks with concrete files or commands where possible.
+  agent-team:
+    - Use 3-5 workers for coordinated implementation work.
+    - Assign disjoint ownership scopes and do not revert another worker's edits.

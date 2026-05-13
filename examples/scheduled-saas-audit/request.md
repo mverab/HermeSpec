@@ -8,3 +8,4 @@ Constraints:
 - Do not cancel subscriptions.
 - Do not contact vendors.
 - Report through Telegram.
+- Include measured current spend, prior baseline spend, and the observed percentage change in the transcript.
