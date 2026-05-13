@@ -28,6 +28,14 @@ def slugify_title(title: str) -> str:
     return validate_change_id(slug)
 
 
+def _normalize_status(raw: str) -> str:
+    if raw == "approval":
+        return "approved"
+    if raw == "rejection":
+        return "rejected"
+    return raw
+
+
 class OpenSpecContractService:
     def __init__(self, workspace: str | Path, config: Config | None = None):
         self.workspace = OpenSpecWorkspace(Path(workspace))
@@ -75,7 +83,7 @@ class OpenSpecContractService:
         approval_info = self._get_approval_info(change_id)
         return ChangeArtifacts(
             change_id=artifacts.change_id,
-            status=approval_info.get("status", "proposed")
+            status=_normalize_status(approval_info.get("status", "proposed"))
             if approval_info
             else "proposed",
             path=artifacts.path,
@@ -93,7 +101,7 @@ class OpenSpecContractService:
             enriched.append(
                 ChangeSummary(
                     change_id=summary.change_id,
-                    status=approval_info.get("status", "proposed")
+                    status=_normalize_status(approval_info.get("status", "proposed"))
                     if approval_info
                     else "proposed",
                     path=summary.path,

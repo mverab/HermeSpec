@@ -11,6 +11,16 @@ def _serialize_error(error: OpenSpecMCPError) -> dict:
     return {"error": error.to_dict()}
 
 
+def _require_archive_allowed(change: dict) -> None:
+    status = change.get("status")
+    if status not in {"approval", "approved", "completed"}:
+        raise OpenSpecMCPError(
+            "ARCHIVE_NOT_ALLOWED",
+            "Change must be approved or completed before archival.",
+            {"change_id": change.get("change_id"), "status": status},
+        )
+
+
 def build_server() -> FastMCP:
     server = FastMCP("openspec-mcp")
     config = load_config()
@@ -54,6 +64,14 @@ def build_server() -> FastMCP:
     @server.tool(name="openspec.archive")
     def archive(payload: dict) -> dict:
         try:
+            if not isinstance(payload, dict) or not payload.get("change_id"):
+                raise OpenSpecMCPError(
+                    "INVALID_INPUT",
+                    "Archive request requires a change_id.",
+                    {"missing": ["change_id"]},
+                )
+            change = service.get_change_dict(payload["change_id"])
+            _require_archive_allowed(change)
             return service.archive_dict(payload)
         except OpenSpecMCPError as error:
             return _serialize_error(error)
