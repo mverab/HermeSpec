@@ -40,7 +40,7 @@ class OpenSpecContractService:
         validate_contract_payload(request.type, request.payload)
 
         change_dir = self.workspace.create_change(change_id)
-        spec_dir = change_dir / "specs" / "scheduled-task"
+        spec_dir = change_dir / "specs" / request.type.replace("_", "-")
         spec_dir.mkdir(parents=True)
 
         proposal_path = change_dir / "proposal.md"
@@ -49,9 +49,14 @@ class OpenSpecContractService:
 
         proposal_path.write_text(self._proposal_template(request), encoding="utf-8")
         tasks_path.write_text(self._tasks_template(), encoding="utf-8")
-        spec_path.write_text(
-            self._scheduled_task_spec_template(request), encoding="utf-8"
-        )
+        if request.type == "scheduled_task":
+            spec_path.write_text(
+                self._scheduled_task_spec_template(request), encoding="utf-8"
+            )
+        elif request.type == "external_action":
+            spec_path.write_text(
+                self._external_action_spec_template(request), encoding="utf-8"
+            )
 
         return ProposeResponse(
             change_id=change_id,
@@ -207,6 +212,27 @@ class OpenSpecContractService:
             f"- Mode: `{trigger['mode']}`\n"
             f"- Schedule: `{trigger['schedule']}`\n"
             f"- Timezone: `{trigger['timezone']}`\n\n"
+            "## Acceptance\n\n"
+            + "\n".join(f"- {item}" for item in request.payload["acceptance"])
+            + "\n"
+        )
+
+    def _external_action_spec_template(self, request: ProposeRequest) -> str:
+        action = request.payload["action"]
+        return (
+            "# External Action Contract\n\n"
+            "## Objective\n\n"
+            f"{request.payload['objective']}\n\n"
+            "## Action\n\n"
+            f"- Type: `{action['type']}`\n"
+            f"- Target: `{action['target']}`\n"
+            f"- Description: {action['description']}\n\n"
+            "## Audience\n\n"
+            f"{request.payload['audience']}\n\n"
+            "## Channel\n\n"
+            f"{request.payload['channel']}\n\n"
+            "## Constraints\n\n"
+            f"{request.payload['constraints']}\n\n"
             "## Acceptance\n\n"
             + "\n".join(f"- {item}" for item in request.payload["acceptance"])
             + "\n"

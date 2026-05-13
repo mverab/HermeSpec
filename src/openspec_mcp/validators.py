@@ -13,6 +13,8 @@ def load_schema(schema_name: str, schemas_root: Path | None = None) -> dict[str,
     filename = (
         "scheduled-task.yaml"
         if schema_name == "scheduled_task"
+        else "external-action.yaml"
+        if schema_name == "external_action"
         else f"{schema_name}.yaml"
     )
     path = root / filename
@@ -32,15 +34,8 @@ def load_schema(schema_name: str, schemas_root: Path | None = None) -> dict[str,
     return data
 
 
-def validate_contract_payload(contract_type: str, payload: dict[str, Any]) -> None:
-    if contract_type != "scheduled_task":
-        raise OpenSpecMCPError(
-            "UNSUPPORTED_CONTRACT_TYPE",
-            f"Contract type is not active in the MVP: {contract_type}",
-            {"type": contract_type},
-        )
-
-    required = [
+_SCHEMA_REQUIRED_FIELDS: dict[str, list[str]] = {
+    "scheduled_task": [
         "objective",
         "trigger",
         "preconditions",
@@ -49,11 +44,33 @@ def validate_contract_payload(contract_type: str, payload: dict[str, Any]) -> No
         "rollback",
         "alerting",
         "acceptance",
-    ]
+    ],
+    "external_action": [
+        "objective",
+        "action",
+        "audience",
+        "channel",
+        "approval",
+        "constraints",
+        "rollback",
+        "acceptance",
+    ],
+}
+
+
+def validate_contract_payload(contract_type: str, payload: dict[str, Any]) -> None:
+    required = _SCHEMA_REQUIRED_FIELDS.get(contract_type)
+    if required is None:
+        raise OpenSpecMCPError(
+            "UNSUPPORTED_CONTRACT_TYPE",
+            f"Contract type is not active in the MVP: {contract_type}",
+            {"type": contract_type},
+        )
+
     missing = [field for field in required if field not in payload]
     if missing:
         raise OpenSpecMCPError(
             "SCHEMA_VALIDATION_FAILED",
-            "Scheduled task payload is missing required fields.",
+            f"{contract_type.replace('_', ' ').title()} payload is missing required fields.",
             {"missing": missing},
         )
