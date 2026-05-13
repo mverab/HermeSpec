@@ -34,6 +34,24 @@ VALID_SCHEDULED_TASK = {
     "acceptance": ["Report when spend increases more than 15%."],
 }
 
+VALID_EXTERNAL_ACTION = {
+    "objective": "Notify team of critical alert via Slack.",
+    "action": {
+        "type": "send_message",
+        "target": "#incidents",
+        "description": "Post critical alert to incidents channel.",
+    },
+    "audience": "On-call engineers",
+    "channel": "slack",
+    "approval": {"required": True, "minimum_approvers": 1},
+    "constraints": {"max_cost_usd": 0, "read_only": False},
+    "rollback": {
+        "possible": True,
+        "procedure": "Delete the posted message if within 5 minutes.",
+    },
+    "acceptance": ["Message is posted to #incidents within 30 seconds."],
+}
+
 
 def test_validate_scheduled_task_requires_core_fields():
     payload = dict(VALID_SCHEDULED_TASK)
@@ -46,14 +64,25 @@ def test_validate_scheduled_task_requires_core_fields():
     assert "trigger" in exc.value.detail["missing"]
 
 
+def test_validate_external_action_requires_core_fields():
+    payload = dict(VALID_EXTERNAL_ACTION)
+    payload.pop("action")
+
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("external_action", payload)
+
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "action" in exc.value.detail["missing"]
+
+
 def test_schema_files_are_available():
     scheduled = load_schema("scheduled_task")
+    external = load_schema("external_action")
     future_research = load_schema("future/research")
-    future_external_action = load_schema("future/external-action")
 
     assert scheduled["type"] == "scheduled_task"
+    assert external["type"] == "external_action"
     assert future_research["type"] == "research"
-    assert future_external_action["type"] == "external_action"
 
 
 def test_propose_creates_all_required_artifacts(tmp_path):
@@ -87,6 +116,59 @@ def test_propose_creates_all_required_artifacts(tmp_path):
         / "scheduled-task"
         / "spec.md"
     ).exists()
+
+
+def test_propose_external_action_creates_all_required_artifacts(tmp_path):
+    service = OpenSpecContractService(tmp_path)
+
+    response = service.propose(
+        ProposeRequest(
+            title="Notify team of critical alert",
+            description="Post critical alert to Slack #incidents.",
+            type="external_action",
+            change_id="notify-critical-alert",
+            payload=VALID_EXTERNAL_ACTION,
+        )
+    )
+
+    assert response.change_id == "notify-critical-alert"
+    assert response.status == "proposed"
+    assert response.approval_required is True
+    assert (
+        tmp_path / "openspec" / "changes" / response.change_id / "proposal.md"
+    ).exists()
+    assert (
+        tmp_path / "openspec" / "changes" / response.change_id / "tasks.md"
+    ).exists()
+    assert (
+        tmp_path
+        / "openspec"
+        / "changes"
+        / response.change_id
+        / "specs"
+        / "external-action"
+        / "spec.md"
+    ).exists()
+
+
+def test_propose_external_action_rejects_missing_fields(tmp_path):
+    service = OpenSpecContractService(tmp_path)
+    payload = dict(VALID_EXTERNAL_ACTION)
+    payload.pop("constraints")
+
+    with pytest.raises(OpenSpecMCPError) as exc:
+        service.propose(
+            ProposeRequest(
+                title="Notify team",
+                description="Test missing fields.",
+                type="external_action",
+                change_id="missing-fields",
+                payload=payload,
+            )
+        )
+
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "constraints" in exc.value.detail["missing"]
 
 
 def test_get_and_list_change_after_propose(tmp_path):
