@@ -1,6 +1,0 @@
-type: research
-version: 0.1.0
-status: deprecated
-description: |
-  This placeholder has been promoted to the active schema at `schemas/research.yaml`.
-  Use the active path for validation and proposal.

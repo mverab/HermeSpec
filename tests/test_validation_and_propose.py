@@ -135,13 +135,13 @@ def test_validate_scheduled_task_rejects_missing_action_item_field():
 def test_schema_files_are_available():
     scheduled = load_schema("scheduled_task")
     external = load_schema("external_action")
-    future_research = load_schema("future/research")
+    research = load_schema("research")
 
     assert scheduled["type"] == "scheduled_task"
     assert external["type"] == "external_action"
     assert external.get("status") != "future-placeholder"
     assert "properties" in external
-    assert future_research["type"] == "research"
+    assert research["type"] == "research"
 
 
 def test_propose_creates_all_required_artifacts(tmp_path):

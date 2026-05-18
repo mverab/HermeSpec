@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
@@ -9,7 +10,10 @@ from .errors import OpenSpecMCPError
 
 
 def load_schema(schema_name: str, schemas_root: Path | None = None) -> dict[str, Any]:
-    root = schemas_root or Path(__file__).resolve().parents[2] / "schemas"
+    if schemas_root is not None:
+        root = schemas_root
+    else:
+        root = files("openspec_mcp") / "schemas"
     filename = (
         "scheduled-task.yaml"
         if schema_name == "scheduled_task"
@@ -40,6 +44,7 @@ _PYTHON_TYPES = {
     "array": list,
     "boolean": bool,
     "integer": int,
+    "number": (int, float),
     "object": dict,
     "string": str,
 }
@@ -139,4 +144,7 @@ def _join_path(parent: str, child: str) -> str:
 def _matches_type(value: Any, expected_type: str) -> bool:
     if expected_type == "integer":
         return isinstance(value, int) and not isinstance(value, bool)
-    return isinstance(value, _PYTHON_TYPES[expected_type])
+    py_type = _PYTHON_TYPES[expected_type]
+    if isinstance(py_type, tuple):
+        return isinstance(value, py_type)
+    return isinstance(value, py_type)
