@@ -34,7 +34,7 @@ def load_schema(schema_name: str, schemas_root: Path | None = None) -> dict[str,
     return data
 
 
-_ACTIVE_CONTRACT_TYPES = {"scheduled_task", "external_action"}
+_ACTIVE_CONTRACT_TYPES = {"scheduled_task", "external_action", "research"}
 
 _PYTHON_TYPES = {
     "array": list,

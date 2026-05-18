@@ -336,6 +336,15 @@ def test_hermes_skill_requires_disjoint_parallel_agent_deliverables():
     assert "clear deliverables" in skill_text
 
 
+def test_hermes_skill_requires_research_proposal():
+    """The skill must instruct Hermes to propose research contracts."""
+    skill_text = HERMES_SKILL.read_text(encoding="utf-8")
+
+    assert "research" in skill_text
+    assert "type: research" in skill_text
+    assert "execute_research" in skill_text
+
+
 def test_scheduled_saas_example_surfaces_execution_evidence_requirements():
     """The example must show what proof Hermes reports after execution."""
     example_text = (
@@ -345,3 +354,117 @@ def test_scheduled_saas_example_surfaces_execution_evidence_requirements():
     assert "Execution transcript requirements" in example_text
     assert "observed_spend_increase_percent" in example_text
     assert "acceptance_criteria_evidence" in example_text
+
+
+def test_hermes_research_full_flow_propose_approve_consume_constraints(
+    monkeypatch, tmp_path
+):
+    """Validate the full Hermes-MCP handoff for a research contract:
+
+    1. Hermes proposes a research contract.
+    2. User approves with explicit constraints.
+    3. Hermes calls get_change, verifies approval event status, and loads constraints.
+    4. Execution must respect the boundaries defined in constraints.
+    """
+    monkeypatch.setenv("OPENSPEC_WORKSPACE", str(tmp_path))
+    server = build_server()
+
+    research_payload = {
+        "objective": "Research top 3 competitors in real-time collaboration.",
+        "scope": {
+            "included": ["feature comparison", "pricing models"],
+            "excluded": ["private financial data"],
+        },
+        "sources": [
+            {"type": "web_search", "identifier": "general"},
+        ],
+        "methodology": {
+            "approach": "Search for public comparisons and synthesize.",
+            "allowed_tools": ["web_search", "read_document"],
+        },
+        "deliverable": {
+            "format": "markdown_matrix",
+            "location": "docs/research/competitor-matrix.md",
+        },
+        "acceptance": ["Matrix covers at least 3 competitors."],
+    }
+
+    # Step 1: Propose
+    propose_result = _json_result(
+        asyncio.run(
+            server.call_tool(
+                "openspec.propose",
+                {
+                    "payload": {
+                        "title": "Research competitor landscape",
+                        "description": "Top 3 competitors in real-time collaboration.",
+                        "type": "research",
+                        "change_id": "hermes-research-flow",
+                        "payload": research_payload,
+                    }
+                },
+            )
+        )
+    )
+    assert propose_result["status"] == "proposed"
+    assert propose_result["approval_required"] is True
+
+    # Step 2: Approve with explicit constraints
+    constraints = {
+        "max_cost_usd": 10,
+        "allowed_tools": ["web_search", "read_document"],
+        "max_duration_minutes": 60,
+    }
+    approve_result = _json_result(
+        asyncio.run(
+            server.call_tool(
+                "openspec.approve",
+                {
+                    "payload": {
+                        "change_id": "hermes-research-flow",
+                        "actor": "user@example.com",
+                        "channel": "cli",
+                        "scope": "execute_research",
+                        "constraints": constraints,
+                    }
+                },
+            )
+        )
+    )
+    assert approve_result["status"] == "approved"
+    assert approve_result["event_id"]
+
+    # Step 3: Hermes consumes change and verifies approval + constraints
+    get_result = _json_result(
+        asyncio.run(
+            server.call_tool(
+                "openspec.get_change", {"change_id": "hermes-research-flow"}
+            )
+        )
+    )
+
+    assert get_result["status"] == "approved"
+    assert get_result["approval"] is not None
+    assert get_result["approval"]["status"] == "approval"
+
+    latest_event = get_result["approval"]["latest_event"]
+    assert latest_event["constraints"] == constraints
+    assert latest_event["scope"] == "execute_research"
+    assert latest_event["actor"] == "user@example.com"
+
+    assert get_result["proposal"]
+    assert get_result["tasks"]
+    assert get_result["specs"]
+    spec_paths = [spec["path"] for spec in get_result["specs"]]
+    assert any("research" in p for p in spec_paths)
+
+    # Step 4: list_changes also reflects approved status
+    list_result = _json_result(
+        asyncio.run(server.call_tool("openspec.list_changes", {}))
+    )
+    assert len(list_result["changes"]) == 1
+    listed = list_result["changes"][0]
+    assert listed["change_id"] == "hermes-research-flow"
+    assert listed["status"] == "approved"
+    assert listed["approval"]["status"] == "approval"
+    assert listed["approval"]["latest_event"]["constraints"] == constraints

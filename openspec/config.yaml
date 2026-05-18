@@ -2,11 +2,12 @@ schema: spec-driven
 
 context: |
   HermeSpec provides a Python 3.11+ stdio MCP server named `openspec-mcp`.
-  The MVP manages OpenSpec-backed agent contracts for `scheduled_task` and
-  `external_action` contract types. The server creates proposal, task, and spec
-  artifacts, records approval or rejection events in `openspec/approvals.jsonl`,
-  and archives completed changes. Hermes remains responsible for execution and
-  must not execute a contract before explicit approval.
+  The MVP manages OpenSpec-backed agent contracts for `scheduled_task`,
+  `external_action`, and `research` contract types. The server creates proposal,
+  task, and spec artifacts, records approval or rejection events in
+  `openspec/approvals.jsonl`, and archives completed changes. Hermes remains
+  responsible for execution and must not execute a contract before explicit
+  approval.
 
 rules:
   goal:

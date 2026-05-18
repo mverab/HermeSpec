@@ -257,6 +257,172 @@ def test_propose_external_action_rejects_invalid_nested_payload_before_writing(
     assert not (tmp_path / "openspec" / "changes" / "missing-nested-fields").exists()
 
 
+VALID_RESEARCH = {
+    "objective": "Research top 3 competitors in real-time collaboration.",
+    "scope": {
+        "included": ["feature comparison", "pricing models", "market share"],
+        "excluded": ["private financial data"],
+    },
+    "sources": [
+        {"type": "web_search", "identifier": "general"},
+        {"type": "report", "identifier": "Gartner-2024"},
+    ],
+    "methodology": {
+        "approach": "Search for public comparisons and synthesize findings.",
+        "allowed_tools": ["web_search", "read_document"],
+    },
+    "deliverable": {
+        "format": "markdown_matrix",
+        "location": "docs/research/competitor-matrix.md",
+    },
+    "acceptance": ["Matrix covers at least 3 competitors."],
+}
+
+
+def test_validate_research_payload_accepted():
+    validate_contract_payload("research", VALID_RESEARCH)
+
+
+def test_validate_research_rejects_missing_objective():
+    payload = dict(VALID_RESEARCH)
+    payload.pop("objective")
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "objective" in exc.value.detail["missing"]
+
+
+def test_validate_research_rejects_missing_scope():
+    payload = dict(VALID_RESEARCH)
+    payload.pop("scope")
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "scope" in exc.value.detail["missing"]
+
+
+def test_validate_research_rejects_missing_sources():
+    payload = dict(VALID_RESEARCH)
+    payload.pop("sources")
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "sources" in exc.value.detail["missing"]
+
+
+def test_validate_research_rejects_missing_methodology():
+    payload = dict(VALID_RESEARCH)
+    payload.pop("methodology")
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "methodology" in exc.value.detail["missing"]
+
+
+def test_validate_research_rejects_missing_deliverable():
+    payload = dict(VALID_RESEARCH)
+    payload.pop("deliverable")
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "deliverable" in exc.value.detail["missing"]
+
+
+def test_validate_research_rejects_missing_acceptance():
+    payload = dict(VALID_RESEARCH)
+    payload.pop("acceptance")
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "acceptance" in exc.value.detail["missing"]
+
+
+def test_validate_research_rejects_missing_nested_scope_field():
+    payload = dict(VALID_RESEARCH)
+    payload["scope"] = {"included": ["feature comparison"]}
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "scope.excluded" in exc.value.detail["missing"]
+
+
+def test_validate_research_rejects_missing_nested_source_field():
+    payload = dict(VALID_RESEARCH)
+    payload["sources"] = [{"type": "web_search"}]
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "sources.0.identifier" in exc.value.detail["missing"]
+
+
+def test_validate_research_rejects_missing_nested_methodology_field():
+    payload = dict(VALID_RESEARCH)
+    payload["methodology"] = {"approach": "Search and synthesize."}
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "methodology.allowed_tools" in exc.value.detail["missing"]
+
+
+def test_validate_research_rejects_missing_nested_deliverable_field():
+    payload = dict(VALID_RESEARCH)
+    payload["deliverable"] = {"format": "markdown_matrix"}
+    with pytest.raises(OpenSpecMCPError) as exc:
+        validate_contract_payload("research", payload)
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "deliverable.location" in exc.value.detail["missing"]
+
+
+def test_propose_research_creates_all_required_artifacts(tmp_path):
+    service = OpenSpecContractService(tmp_path)
+    response = service.propose(
+        ProposeRequest(
+            title="Research competitor landscape",
+            description="Top 3 competitors in real-time collaboration.",
+            type="research",
+            change_id="competitor-research",
+            payload=VALID_RESEARCH,
+        )
+    )
+    assert response.change_id == "competitor-research"
+    assert response.status == "proposed"
+    assert response.approval_required is True
+    assert (
+        tmp_path / "openspec" / "changes" / "competitor-research" / "proposal.md"
+    ).exists()
+    assert (
+        tmp_path / "openspec" / "changes" / "competitor-research" / "tasks.md"
+    ).exists()
+    assert (
+        tmp_path
+        / "openspec"
+        / "changes"
+        / "competitor-research"
+        / "specs"
+        / "research"
+        / "spec.md"
+    ).exists()
+
+
+def test_propose_research_rejects_missing_fields_before_writing(tmp_path):
+    service = OpenSpecContractService(tmp_path)
+    payload = dict(VALID_RESEARCH)
+    payload.pop("methodology")
+    with pytest.raises(OpenSpecMCPError) as exc:
+        service.propose(
+            ProposeRequest(
+                title="Research test",
+                description="Test missing fields.",
+                type="research",
+                change_id="research-missing-fields",
+                payload=payload,
+            )
+        )
+    assert exc.value.code == "SCHEMA_VALIDATION_FAILED"
+    assert "methodology" in exc.value.detail["missing"]
+    assert not (tmp_path / "openspec" / "changes" / "research-missing-fields").exists()
+
+
 def test_get_and_list_change_after_propose(tmp_path):
     service = OpenSpecContractService(tmp_path)
     service.propose(

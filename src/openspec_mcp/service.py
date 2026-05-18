@@ -65,6 +65,10 @@ class OpenSpecContractService:
             spec_path.write_text(
                 self._external_action_spec_template(request), encoding="utf-8"
             )
+        elif request.type == "research":
+            spec_path.write_text(
+                self._research_spec_template(request), encoding="utf-8"
+            )
 
         return ProposeResponse(
             change_id=change_id,
@@ -241,6 +245,36 @@ class OpenSpecContractService:
             f"{request.payload['channel']}\n\n"
             "## Constraints\n\n"
             f"{request.payload['constraints']}\n\n"
+            "## Acceptance\n\n"
+            + "\n".join(f"- {item}" for item in request.payload["acceptance"])
+            + "\n"
+        )
+
+    def _research_spec_template(self, request: ProposeRequest) -> str:
+        scope = request.payload["scope"]
+        sources = request.payload["sources"]
+        methodology = request.payload["methodology"]
+        deliverable = request.payload["deliverable"]
+        return (
+            "# Research Contract\n\n"
+            "## Objective\n\n"
+            f"{request.payload['objective']}\n\n"
+            "## Scope\n\n"
+            "### Included\n"
+            + "\n".join(f"- {item}" for item in scope["included"])
+            + "\n\n### Excluded\n"
+            + "\n".join(f"- {item}" for item in scope["excluded"])
+            + "\n\n## Sources\n\n"
+            + "\n".join(
+                f"- `{s['type']}`: {s['identifier']}"
+                for s in sources
+            )
+            + "\n\n## Methodology\n\n"
+            f"- Approach: {methodology['approach']}\n"
+            f"- Allowed tools: {', '.join(methodology['allowed_tools'])}\n\n"
+            "## Deliverable\n\n"
+            f"- Format: `{deliverable['format']}`\n"
+            f"- Location: {deliverable['location']}\n\n"
             "## Acceptance\n\n"
             + "\n".join(f"- {item}" for item in request.payload["acceptance"])
             + "\n"

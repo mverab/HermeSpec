@@ -2,11 +2,13 @@
 
 HermeSpec provides an OpenSpec-backed contract layer for long-running AI agents.
 
-The MVP implements the OpenSpec contract lifecycle for two active contract types:
+The MVP implements the OpenSpec contract lifecycle for three active contract types:
 
 - `scheduled_task` - recurring or scheduled agent operations.
 - `external_action` - external-facing mutations such as email, Slack, payments,
   vendor contact, or API writes.
+- `research` - agent-led research contracts covering market analysis, competitive
+  intelligence, technical evaluation, or data gathering.
 
 The MCP server exposes:
 
@@ -17,9 +19,8 @@ The MCP server exposes:
 - `openspec.reject` - record rejection with reason.
 - `openspec.archive` - move completed contracts to archive.
 
-`scheduled_task` and `external_action` payloads are validated before artifacts
-are created. `research` remains a future placeholder schema and is not active in
-the MVP.
+`scheduled_task`, `external_action`, and `research` payloads are validated before
+artifacts are created.
 
 Hermes integration includes a skill (`hermes/skills/openspec-contracts/SKILL.md`) that defines when contracts are required, how to verify approval, and how to execute within approved constraints.
 
@@ -29,6 +30,12 @@ Hermes integration includes a skill (`hermes/skills/openspec-contracts/SKILL.md`
 - `uv`
 - Node.js 20.19+
 - OpenSpec CLI installed separately and available as `openspec`
+
+Install the OpenSpec CLI globally:
+
+```bash
+npm i -g @open-spec/cli
+```
 
 ## Development
 
@@ -77,6 +84,6 @@ Before an MVP ship decision, verify:
 
 - `uv run pytest` exits 0.
 - `uv build` exits 0.
-- README scope matches the active contract types: `scheduled_task` and `external_action`.
+- README scope matches the active contract types: `scheduled_task`, `external_action`, and `research`.
 - Living spec Purpose sections are concrete and no longer contain archived-change placeholders.
 - Any worker team uses 3-5 workers with disjoint write ownership.
