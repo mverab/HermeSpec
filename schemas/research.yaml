@@ -1,0 +1,74 @@
+type: research
+version: 0.1.0
+status: active
+description: Contract schema for agent-led research contracts that gather, analyze, and report information.
+required:
+  - objective
+  - scope
+  - sources
+  - methodology
+  - deliverable
+  - acceptance
+properties:
+  objective:
+    type: string
+  scope:
+    type: object
+    required:
+      - included
+      - excluded
+    properties:
+      included:
+        type: array
+        items:
+          type: string
+      excluded:
+        type: array
+        items:
+          type: string
+  sources:
+    type: array
+    items:
+      type: object
+      required:
+        - type
+        - identifier
+      properties:
+        type:
+          type: string
+        identifier:
+          type: string
+        description:
+          type: string
+  methodology:
+    type: object
+    required:
+      - approach
+      - allowed_tools
+    properties:
+      approach:
+        type: string
+      allowed_tools:
+        type: array
+        items:
+          type: string
+      forbidden_tools:
+        type: array
+        items:
+          type: string
+  deliverable:
+    type: object
+    required:
+      - format
+      - location
+    properties:
+      format:
+        type: string
+      location:
+        type: string
+      summary:
+        type: string
+  acceptance:
+    type: array
+    items:
+      type: string

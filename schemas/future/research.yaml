@@ -1,11 +1,6 @@
 type: research
 version: 0.1.0
-status: future-placeholder
-description: Placeholder schema for future agent-led research contracts. Not actively validated in the MVP.
-required:
-  - objective
-  - scope
-  - sources
-  - methodology
-  - deliverable
-  - acceptance
+status: deprecated
+description: |
+  This placeholder has been promoted to the active schema at `schemas/research.yaml`.
+  Use the active path for validation and proposal.

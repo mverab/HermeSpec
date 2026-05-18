@@ -22,6 +22,7 @@ Propose a contract via `openspec.propose` when the task is any of the following:
 - External-facing (sends messages, calls APIs, contacts vendors).
 - Financial (spends money, modifies billing, changes subscriptions).
 - Irreversible (deletions, cancellations, data loss).
+- Non-trivial research (market analysis, competitive intelligence, technical evaluation, data gathering).
 - Likely to run unattended (no human in the loop at execution time).
 
 If the user describes a one-off, read-only, internal task with no external impact, a contract is optional but still recommended for unattended execution.
@@ -57,6 +58,17 @@ The immediate response from `openspec.approve` may say `status: "approved"`, but
 If the contract is `proposed`, Hermes must not execute. It must inform the user that approval is required.
 If the contract is `rejected`, Hermes must not execute. It must inform the user of the rejection reason and ask if they want to propose a revised contract.
 If the contract is `archived`, Hermes must treat it as non-existent and require a new proposal.
+
+**Research policy**
+
+For `research` contracts specifically (market analysis, competitive intelligence, technical evaluation, data gathering):
+- Hermes MUST propose a `research` contract before executing any non-trivial research task.
+- Hermes MUST wait for explicit approval with `scope: execute_research` before executing the research.
+- Respect the `allowed_tools` constraint. Do not use tools outside the approved list.
+- Respect the `forbidden_tools` constraint. Do not use explicitly forbidden tools.
+- Respect scope boundaries. Stay within `scope.included` and avoid `scope.excluded` topics.
+- Deliver the output to the agreed `deliverable.location` in the specified `deliverable.format`.
+- Report progress through approved alerting channels.
 
 **External action policy**
 
@@ -163,6 +175,38 @@ Hermes: [calls openspec.get_change("notify-critical-alert")]
         Status: approved. Latest event type: approval. Constraints loaded.
         [posts to #incidents only]
         [reports message ID, target, channel, and acceptance evidence]
+```
+
+**Example research conversation flow**
+
+```
+User: Research the top 3 competitors in the real-time collaboration space and produce a comparison matrix.
+
+Hermes: This is a non-trivial research task. I'll create an OpenSpec contract for it.
+       [calls openspec.propose with type: research]
+       Proposed contract `competitor-research-collaboration`.
+       Requires approval before execution.
+
+User: Approved.
+
+Hermes: I need explicit approval metadata to proceed.
+        Who is approving, through which channel, and what are the execution constraints?
+        For example:
+        - max_cost_usd: 10
+        - allowed_tools: [web_search, read_document]
+        - max_duration_minutes: 60
+
+User: I approve via CLI. Max cost $10. Search and read tools only. Max 60 minutes.
+
+Hermes: [calls openspec.approve with actor, channel, scope, constraints]
+        Approved. I will execute the research within the approved constraints
+        and deliver the comparison matrix.
+
+[At execution time]
+Hermes: [calls openspec.get_change("competitor-research-collaboration")]
+        Status: approved. Latest event type: approval. Constraints loaded.
+        [executes research within scope boundaries]
+        [reports evidence of acceptance criteria met]
 ```
 
 **Guardrails**

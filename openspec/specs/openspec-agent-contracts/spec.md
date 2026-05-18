@@ -3,8 +3,9 @@
 ## Purpose
 Define the MCP contract lifecycle that lets Hermes and other agents propose,
 inspect, approve, reject, and archive OpenSpec-backed work before execution.
-The MVP supports validated `scheduled_task` and `external_action` contracts,
-keeps approval history append-only, and leaves execution outside the MCP server.
+The MVP supports validated `scheduled_task`, `external_action`, and `research`
+contracts, keeps approval history append-only, and leaves execution outside the
+MCP server.
 
 ## Requirements
 ### Requirement: MCP Server Availability
@@ -32,6 +33,15 @@ The system SHALL expose `openspec.propose` to create a new OpenSpec change for a
 #### Scenario: Propose external action contract
 - **WHEN** `openspec.propose` is called with type `external_action`
 - **THEN** the system validates the payload against `schemas/external-action.yaml`
+- **AND** the system creates a new change directory under `openspec/changes/<change_id>/`
+- **AND** the system writes `proposal.md`
+- **AND** the system writes `tasks.md`
+- **AND** the system writes at least one spec artifact
+- **AND** the system returns the change ID, status, artifact paths, and whether approval is required
+
+#### Scenario: Propose research contract
+- **WHEN** `openspec.propose` is called with type `research`
+- **THEN** the system validates the payload against `schemas/research.yaml`
 - **AND** the system creates a new change directory under `openspec/changes/<change_id>/`
 - **AND** the system writes `proposal.md`
 - **AND** the system writes `tasks.md`
@@ -105,13 +115,18 @@ The system SHALL define a `scheduled_task` schema for recurring or scheduled age
 - **WHEN** the system validates a scheduled task contract
 - **THEN** the contract requires objective, trigger, preconditions, actions, idempotency, rollback, alerting, and acceptance criteria
 
-### Requirement: Additional No-Code Schemas (Future)
-The system SHALL include placeholder schemas for `research` contracts for future phases.
+### Requirement: Research Schema
 
-#### Scenario: Research schema placeholder exists
+The system SHALL define a `research` schema for agent-led research contracts.
+
+#### Scenario: Validate research fields
+- **WHEN** the system validates a research contract
+- **THEN** the contract requires objective, scope, sources, methodology, deliverable, and acceptance criteria
+
+#### Scenario: Research schema file is active
 - **WHEN** the repository is inspected
-- **THEN** `schemas/future/research.yaml` defines required fields for research objective, scope, sources, methodology, deliverable, and acceptance criteria
-- **AND** the system does not enforce validation against it in the current phase
+- **THEN** `schemas/research.yaml` defines the active schema
+- **AND** the placeholder `schemas/future/research.yaml` is deprecated
 
 ### Requirement: Hermes Skill
 The system SHALL provide a Hermes skill named `openspec-contracts`.
