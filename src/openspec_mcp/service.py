@@ -69,6 +69,13 @@ class OpenSpecContractService:
             spec_path.write_text(
                 self._research_spec_template(request), encoding="utf-8"
             )
+        else:
+            from .errors import OpenSpecMCPError
+            raise OpenSpecMCPError(
+                "UNSUPPORTED_CONTRACT_TYPE",
+                f"Contract type is not active in the MVP: {request.type}",
+                {"type": request.type},
+            )
 
         return ProposeResponse(
             change_id=change_id,

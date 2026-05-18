@@ -1,6 +1,8 @@
 import asyncio
 import json
 
+import pytest
+
 from openspec_mcp.server import build_server
 
 
@@ -338,3 +340,51 @@ def test_server_archive_rejects_rejected_change(monkeypatch, tmp_path):
 
     assert archive_result["error"]["code"] == "ARCHIVE_NOT_ALLOWED"
     assert (tmp_path / "openspec" / "changes" / "rejected-archive").exists()
+
+
+@pytest.mark.parametrize(
+    "tool_name,payload",
+    [
+        ("openspec.get_change", {"change_id": "../../../etc/passwd"}),
+        (
+            "openspec.approve",
+            {
+                "payload": {
+                    "change_id": "../escape",
+                    "actor": "user@example.com",
+                    "channel": "cli",
+                    "scope": "execute_scheduled_task",
+                }
+            },
+        ),
+        (
+            "openspec.reject",
+            {
+                "payload": {
+                    "change_id": "/absolute/path",
+                    "actor": "user@example.com",
+                    "channel": "cli",
+                    "reason": "No.",
+                }
+            },
+        ),
+        (
+            "openspec.archive",
+            {
+                "payload": {
+                    "change_id": "bad--name",
+                    "actor": "user@example.com",
+                }
+            },
+        ),
+    ],
+)
+def test_server_rejects_path_traversal_at_tool_boundary(
+    monkeypatch, tmp_path, tool_name, payload
+):
+    monkeypatch.setenv("OPENSPEC_WORKSPACE", str(tmp_path))
+    server = build_server()
+
+    result = _json_result(asyncio.run(server.call_tool(tool_name, payload)))
+
+    assert result["error"]["code"] == "INVALID_CHANGE_ID"

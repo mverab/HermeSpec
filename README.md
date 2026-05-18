@@ -72,6 +72,10 @@ The server reads:
 - `OPENSPEC_TELEMETRY`, default `0`
 - `OPENSPEC_AGENT_CONTRACTS_APPROVALS_FILE`, default `openspec/approvals.jsonl`
 
+### Telemetry
+
+`OPENSPEC_TELEMETRY` controls whether the server emits lightweight operational metrics (tool call counts, error rates, and latency histograms). It is **off by default** (`0`). When set to `1`, metrics are written to a local file in the workspace for offline inspection. No data is sent to external servers.
+
 ## Hermes Integration
 
 See `hermes/mcp-config.example.json` for an example MCP client configuration that connects Hermes to the `openspec-mcp` server.
