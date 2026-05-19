@@ -1,14 +1,23 @@
 [project]
 name = "hermespec"
 version = "0.1.0"
-description = "OpenSpec-backed contract layer for long-running AI agents."
+description = "OpenSpec-backed approval contracts for long-running AI agents."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
 authors = [
     {name = "HermeSpec Contributors"},
 ]
-keywords = ["mcp", "openspec", "ai-agent", "contract", "approval"]
+keywords = [
+    "mcp",
+    "openspec",
+    "ai-agent",
+    "agent",
+    "contract",
+    "approval",
+    "governance",
+    "developer-tools",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -17,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
     "mcp>=1.0.0",
@@ -24,12 +34,13 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/hermespec/hermespec"
-Repository = "https://github.com/hermespec/hermespec"
-Issues = "https://github.com/hermespec/hermespec/issues"
+Homepage = "https://github.com/mverab/HermeSpec"
+Repository = "https://github.com/mverab/HermeSpec"
+Issues = "https://github.com/mverab/HermeSpec/issues"
 
 [project.scripts]
 openspec-mcp = "openspec_mcp.server:main"
+hermespec-mcp = "openspec_mcp.server:main"
 
 [dependency-groups]
 dev = [

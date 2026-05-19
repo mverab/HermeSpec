@@ -1,93 +1,189 @@
 # HermeSpec
 
-HermeSpec provides an OpenSpec-backed contract layer for long-running AI agents.
+> Approval contracts for long-running AI agents. Propose, approve, execute.
 
-The MVP implements the OpenSpec contract lifecycle for three active contract types:
+[![CI](https://github.com/mverab/HermeSpec/actions/workflows/ci.yml/badge.svg)](https://github.com/mverab/HermeSpec/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-- `scheduled_task` - recurring or scheduled agent operations.
-- `external_action` - external-facing mutations such as email, Slack, payments,
-  vendor contact, or API writes.
-- `research` - agent-led research contracts covering market analysis, competitive
-  intelligence, technical evaluation, or data gathering.
+## What is HermeSpec?
 
-The MCP server exposes:
+HermeSpec is an MCP server that forces AI agents to ask permission before taking risky actions.
 
-- `openspec.propose` - create a contract with artifacts.
-- `openspec.get_change` - retrieve a contract and its current approval status.
-- `openspec.list_changes` - list active contracts.
-- `openspec.approve` - record explicit approval with constraints.
-- `openspec.reject` - record rejection with reason.
-- `openspec.archive` - move completed contracts to archive.
+When an agent wants to send an email, charge a credit card, post to Slack, or run a scheduled task, it must first **propose a contract** describing exactly what it plans to do. A human reviews and either **approves** (with constraints), **rejects**, or **leaves it pending**. The agent only proceeds after explicit approval.
 
-`scheduled_task`, `external_action`, and `research` payloads are validated before
-artifacts are created.
+All proposals, approvals, rejections, and completions are recorded in an audit log.
 
-Hermes integration includes a skill (`hermes/skills/openspec-contracts/SKILL.md`) that defines when contracts are required, how to verify approval, and how to execute within approved constraints.
+## How it works
 
-## Requirements
+```
+┌─────────────┐     propose      ┌─────────────┐
+│  AI Agent   │ ────────────────→ │  HermeSpec  │
+│ (MCP client)│                   │   Server    │
+└─────────────┘                   └──────┬──────┘
+       ↑                                 │
+       │    approve / reject / constrain │
+       └─────────────────────────────────┘
+                          human
+```
+
+1. **Agent proposes** a contract via `openspec.propose`
+2. **Human approves** via `openspec.approve` (with optional constraints)
+3. **Agent executes** within the approved bounds
+4. **Agent archives** the contract via `openspec.archive` when done
+
+## Quickstart
+
+### Prerequisites
 
 - Python 3.11+
-- `uv`
-- Node.js 20.19+
-- OpenSpec CLI installed separately and available as `openspec`
+- [uv](https://docs.astral.sh/uv/) for Python dependency management
+- Node.js 20.19+ (for the OpenSpec CLI dependency)
 
-Install the OpenSpec CLI globally:
-
-```bash
-npm i -g @open-spec/cli
-```
-
-## Development
-
-Install dependencies:
+### Install
 
 ```bash
-uv sync
+# 1. Clone the repo
+git clone https://github.com/mverab/HermeSpec.git
+cd HermeSpec
+
+# 2. Install Python dependencies
+uv sync --all-groups
+
+# 3. Install the OpenSpec CLI
+npm i -g @fission-ai/openspec@latest
 ```
 
-Run tests:
+### Start the server
 
 ```bash
-uv run pytest
+uv run hermespec-mcp
 ```
 
-Run the MCP server locally:
+The server speaks [Model Context Protocol](https://modelcontextprotocol.io) and exposes six tools for the contract lifecycle.
 
-```bash
-uv run openspec-mcp
+### Propose and approve a contract
+
+An agent proposes a contract:
+
+```json
+{
+  "tool": "openspec.propose",
+  "arguments": {
+    "change_type": "external_action",
+    "title": "Notify team of critical alert",
+    "artifacts": [
+      {
+        "path": "alerts/2026-05-18-critical.md",
+        "purpose": "Alert documentation for the incident"
+      }
+    ],
+    "payload": {
+      "action": "send_slack_message",
+      "channel": "#incidents",
+      "message": "Database replication lag exceeded 30s on primary."
+    }
+  }
+}
 ```
 
-Run packaging verification:
+The server returns a contract ID. A human reviews and approves:
 
-```bash
-uv build
+```json
+{
+  "tool": "openspec.approve",
+  "arguments": {
+    "id": "<contract-id>",
+    "constraints": {
+      "channels": ["#incidents", "#oncall"],
+      "max_mentions": 5
+    }
+  }
+}
 ```
+
+The agent checks approval via `openspec.get_change`, executes the action within constraints, then archives:
+
+```json
+{
+  "tool": "openspec.archive",
+  "arguments": {
+    "id": "<contract-id>"
+  }
+}
+```
+
+## Contract Types
+
+HermeSpec validates payloads for three contract types:
+
+| Type | Use Case | Example |
+|------|----------|---------|
+| `scheduled_task` | Recurring or one-time operations | Security audits, data freshness checks |
+| `external_action` | External-facing mutations | Send email, post to Slack, call API |
+| `research` | Bounded research tasks | Competitive analysis, technical evaluation |
+
+Each type has a JSON Schema that validates the payload before the contract is created.
+
+## MCP Tools
+
+| Tool | Purpose |
+|------|---------|
+| `openspec.propose` | Create a new contract with artifacts and payload |
+| `openspec.get_change` | Retrieve a contract and its current approval status |
+| `openspec.list_changes` | List all active (non-archived) contracts |
+| `openspec.approve` | Record explicit approval with optional constraints |
+| `openspec.reject` | Record rejection with a reason |
+| `openspec.archive` | Move a completed contract to the archive |
 
 ## Configuration
 
-The server reads:
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENSPEC_WORKSPACE` | `.` | Working directory for contracts and artifacts |
+| `OPENSPEC_BIN` | `openspec` | Path to the OpenSpec CLI |
+| `OPENSPEC_TELEMETRY` | `0` | Emit lightweight operational metrics (`1` to enable) |
+| `OPENSPEC_AGENT_CONTRACTS_APPROVALS_FILE` | `openspec/approvals.jsonl` | Path to the approvals log |
 
-- `OPENSPEC_WORKSPACE`, default `.`
-- `OPENSPEC_BIN`, default `openspec`
-- `OPENSPEC_TELEMETRY`, default `0`
-- `OPENSPEC_AGENT_CONTRACTS_APPROVALS_FILE`, default `openspec/approvals.jsonl`
+## Example Flows
 
-### Telemetry
+Full examples for each contract type:
 
-`OPENSPEC_TELEMETRY` controls whether the server emits lightweight operational metrics (tool call counts, error rates, and latency histograms). It is **off by default** (`0`). When set to `1`, metrics are written to a local file in the workspace for offline inspection. No data is sent to external servers.
+| Contract Type | Example |
+|---------------|---------|
+| `scheduled_task` | [Weekly SaaS Security Audit](examples/scheduled-saas-audit/) |
+| `external_action` | [Notify Critical Alert](examples/notify-critical-alert/) |
+| `research` | [Competitor Research](examples/competitor-research/) |
+
+Each example includes:
+
+- `request.md` — the original task request
+- `expected-proposal.md` — what the agent should propose
+- `expected-approval-summary.md` — what an approver would see
+- `expected-rejection.md` — what a rejection looks like
 
 ## Hermes Integration
 
-See `hermes/mcp-config.example.json` for an example MCP client configuration that connects Hermes to the `openspec-mcp` server.
+HermeSpec includes a Hermes skill that defines when contracts are required, how to verify approval, and how to execute within approved constraints.
 
-See `hermes/skills/openspec-contracts/SKILL.md` for the Hermes skill that governs contract-based execution.
+- **MCP config:** [`hermes/mcp-config.example.json`](hermes/mcp-config.example.json)
+- **Skill definition:** [`hermes/skills/openspec-contracts/SKILL.md`](hermes/skills/openspec-contracts/SKILL.md)
 
-## MVP Ship Gate
+## Development
 
-Before an MVP ship decision, verify:
+```bash
+# Install all dependencies including dev tools
+uv sync --all-groups
 
-- `uv run pytest` exits 0.
-- `uv build` exits 0.
-- README scope matches the active contract types: `scheduled_task`, `external_action`, and `research`.
-- Living spec Purpose sections are concrete and no longer contain archived-change placeholders.
-- Any worker team uses 3-5 workers with disjoint write ownership.
+# Run the test suite
+uv run pytest -q
+
+# Run the MCP server locally
+uv run hermespec-mcp
+
+# Build the package
+uv build
+```
+
+## License
+
+[MIT](LICENSE)
