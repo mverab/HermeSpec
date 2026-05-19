@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Added `hermespec-mcp` console script as a preferred alias for `openspec-mcp`.
+- Public repository polish: rewritten README with product positioning, badges, quickstart, and example flows.
+- Added AI/ML classifiers and expanded keywords in packaging metadata.
+
+### Changed
+
+- README rewritten for public product presentation with clear value proposition and quickstart.
+- `CONTRIBUTING.md` aligned with current development commands.
+- Project URLs in `pyproject.toml` corrected to `https://github.com/mverab/HermeSpec`.
+
 ## [0.1.0] - 2026-05-18
 
 ### Added

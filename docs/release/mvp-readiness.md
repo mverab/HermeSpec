@@ -16,7 +16,7 @@ release blockers.
 
 ## Ship Decision Checks
 
-- `uv run pytest` must exit 0.
+- `uv run pytest -q` must exit 0.
 - `uv build` must exit 0.
 - README must describe all active contract types.
 - `openspec/config.yaml` must define operational project context and measurable
@@ -27,14 +27,19 @@ release blockers.
 
 ## Packaging Metadata
 
-- `pyproject.toml` declares the package name, version, README, Python version,
-  dependencies, console script, pytest paths, and Hatchling build backend.
-- No author, project URL, or license metadata is declared. That is not patched
-  here because the repository does not include authoritative values for those
-  fields.
+- `pyproject.toml` declares the package name (`hermespec`), version, README,
+  Python version, dependencies, two console scripts (`openspec-mcp` and
+  `hermespec-mcp`), pytest paths, and Hatchling build backend.
+- Author, project URLs, and MIT license metadata are declared and point to the
+  public repository at `https://github.com/mverab/HermeSpec`.
+- Keywords include MCP, AI agents, approvals, governance, and developer tooling.
+- Classifiers include AI/ML topics in addition to standard development status
+  and Python version markers.
 
 ## Blockers And Risks
 
-- No docs/spec/package metadata blocker remains in Worker 4's owned scope.
+- No docs/spec/package metadata blocker remains.
 - Risk: OpenSpec CLI installation remains external to this package. The README
-  now includes `npm i -g @open-spec/cli` as the canonical install command.
+  includes `npm i -g @fission-ai/openspec@latest` as the canonical install command.
+- Risk: Package is not yet published to PyPI. Install is via `git clone` +
+  `uv sync` as documented.

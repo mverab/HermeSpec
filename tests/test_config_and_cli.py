@@ -1,3 +1,6 @@
+import importlib.metadata
+import tomllib
+
 import pytest
 
 from openspec_mcp.config import load_config
@@ -62,3 +65,43 @@ def test_cli_availability_returns_structured_error_for_missing_binary(tmp_path):
 
     assert exc.value.code == "OPENSPEC_CLI_UNAVAILABLE"
     assert "definitely-missing-openspec-bin" in exc.value.message
+
+
+def _get_console_scripts():
+    """Return console scripts declared in pyproject.toml."""
+    with open("pyproject.toml", "rb") as f:
+        pyproject = tomllib.load(f)
+    return pyproject["project"]["scripts"]
+
+
+def test_openspec_mcp_entry_point_is_declared():
+    scripts = _get_console_scripts()
+    assert "openspec-mcp" in scripts
+    assert scripts["openspec-mcp"] == "openspec_mcp.server:main"
+
+
+def test_hermespec_mcp_entry_point_is_declared():
+    scripts = _get_console_scripts()
+    assert "hermespec-mcp" in scripts
+    assert scripts["hermespec-mcp"] == "openspec_mcp.server:main"
+
+
+def test_both_entry_points_resolve_to_same_module():
+    scripts = _get_console_scripts()
+    assert scripts["openspec-mcp"] == scripts["hermespec-mcp"]
+
+
+def test_installed_entry_points_match_pyproject():
+    """If the package is installed, verify entry points match pyproject.toml."""
+    try:
+        dist = importlib.metadata.distribution("hermespec")
+    except importlib.metadata.PackageNotFoundError:
+        pytest.skip("hermespec not installed (run uv sync)")
+
+    eps = dist.entry_points
+    scripts = {ep.name: ep.value for ep in eps if ep.group == "console_scripts"}
+
+    assert "openspec-mcp" in scripts
+    assert "hermespec-mcp" in scripts
+    assert scripts["openspec-mcp"] == "openspec_mcp.server:main"
+    assert scripts["hermespec-mcp"] == "openspec_mcp.server:main"
